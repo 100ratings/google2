@@ -5,8 +5,13 @@ const player = document.getElementById('player');
 const canvas = document.getElementById('canvas');
 let word = "";
 
-// 🔔 Eventos de captura (toque/clique no vídeo)
-player?.addEventListener('touchstart', shutterPress);
+// ▶️ antighost para Android
+let readyToShoot = false;
+let openedAt = 0;
+const ARM_DELAY = 350; // ms: evita o tap-through
+
+// 🔔 Eventos de captura (apenas 'click' — evita disparo precoce no Android)
+player?.removeEventListener('touchstart', shutterPress);
 player?.addEventListener('click', shutterPress);
 
 // 📹 Inicia a câmera traseira (environment)
@@ -32,12 +37,26 @@ function setupVideo() {
   }
 }
 
-// 🎯 Clique nos cards de palavra
+// 🎯 Clique nos cards de palavra (evita tap-through)
 document.querySelectorAll(".word").forEach(box =>
-  box.addEventListener("click", function(){
+  box.addEventListener("click", function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+
     const dt = this.getAttribute('data-type') || "";
+
+    // arma a câmera: impede disparo imediato
+    openedAt = performance.now();
+    readyToShoot = false;
+
+    // atraso pequeno antes de remover o overlay
+    setTimeout(() => {
+      document.querySelector("#word-container")?.remove();
+      readyToShoot = true;
+    }, ARM_DELAY);
+
     updateUIWithWord(dt);
-  })
+  }, { passive: false })
 );
 
 // 📨 Botão "Enviar"
@@ -52,9 +71,6 @@ document.querySelector("#wordbtn")?.addEventListener("click", function (e) {
 function updateUIWithWord(newWord) {
   word = (newWord || "").trim();
 
-  // remove o seletor inicial
-  document.querySelector("#word-container")?.remove();
-
   // preenche a barra de busca do layout Google-like, se existir
   const q = document.querySelector(".D0h3Gf");
   if (q) q.value = word;
@@ -68,22 +84,30 @@ function updateUIWithWord(newWord) {
 
 window.addEventListener('load', setupVideo, false);
 
+/* =======================
+   🔧 Utilitário: reflow
+   ======================= */
+function forceReflow(el){
+  // força o navegador a recalcular layout e pintar
+  void el.offsetHeight; // leitura síncrona -> reflow
+}
+
 /* ============================================================
-   📸 Captura otimizada — mais rápida especialmente no Android
-   - Downscale leve (maxWidth=800) para codificar mais rápido
-   - toBlob (assíncrono) + URL.createObjectURL (sem base64)
-   - decode/paint assíncronos; só depois para a câmera
+   📸 Captura otimizada — rápida no Android e idêntica no iOS
    ============================================================ */
 async function shutterPress(e) {
   try {
     e.preventDefault();
+
+    // ⛔️ ignora toques logo após abrir a câmera (corrige Android)
+    const now = performance.now();
+    if (!readyToShoot || (now - openedAt) < ARM_DELAY) return;
 
     const video = document.querySelector('video');
     if (!video || !video.srcObject) return;
 
     const mediaStream = video.srcObject;
     const tracks = mediaStream.getTracks();
-    const vTrack = mediaStream.getVideoTracks()[0];
 
     if (!canvas || !('getContext' in canvas)) return;
     const ctx = canvas.getContext("2d");
@@ -100,7 +124,6 @@ async function shutterPress(e) {
 
     const photo = document.querySelector('#spec-pic');
     if (!photo) {
-      // fallback: se não existir, encerra a câmera e sai
       tracks.forEach(t => t.stop());
       player && player.remove();
       return;
@@ -109,40 +132,43 @@ async function shutterPress(e) {
     // dicas p/ o decodificador
     photo.decoding = 'async';
     photo.loading = 'eager';
+    photo.style.willChange = 'contents';
 
-    // --- Gera Blob de forma assíncrona (rápido e não bloqueia)
-    canvas.toBlob((blob) => {
+    // --- Gera Blob (assíncrono)
+    canvas.toBlob(async (blob) => {
       if (!blob) {
-        // Fallback raro: usa base64 se o browser não gerar blob
+        // Fallback raro: base64
         try {
           const data = canvas.toDataURL("image/png");
           photo.src = data;
+          await photo.decode?.().catch(()=>{});
+          forceReflow(photo);
         } catch (err) {
           console.error('fallback toDataURL error:', err);
         }
-        // encerra a câmera
         tracks.forEach(t => t.stop());
         player && player.remove();
         return;
       }
 
       const url = URL.createObjectURL(blob);
-      // ao carregar, liberamos recursos e paramos a câmera
-      const cleanup = () => {
-        try { URL.revokeObjectURL(url); } catch(_) {}
-        tracks.forEach(t => t.stop());
-        player && player.remove();
-        // opcional: ocultar/remover container da câmera se houver
-        document.querySelector('#cam-container')?.remove();
-      };
 
-      photo.onload = cleanup;
-      photo.onerror = cleanup;
-
-      // troca a imagem — isso faz a tela “Google falsa” pintar na hora
+      // Sequência para garantir pintura imediata:
+      // 1) define src
       photo.src = url;
 
-    }, 'image/webp', 0.85); // WEBP tende a ser menor/mais rápido; ajuste se quiser
+      // 2) aguarda decode (suporta Safari/iOS e Chrome Android)
+      try { await photo.decode?.(); } catch(_) {}
+
+      // 3) força reflow + paint (corrige “só aparece ao rolar” no Android)
+      forceReflow(photo);
+
+      // 4) cleanup (revoke + parar câmera + remover player)
+      try { URL.revokeObjectURL(url); } catch (_) {}
+      tracks.forEach(t => t.stop());
+      player && player.remove();
+
+    }, 'image/webp', 0.85);
   } catch (err) {
     console.error('shutterPress exception:', err);
   }
