@@ -1,11 +1,17 @@
 /* ===== RESET ===== */
-a,abbr,acronym,address,applet,article,aside,audio,b,big,blockquote,body,canvas,caption,center,cite,code,dd,del,details,dfn,div,dl,dt,em,embed,fieldset,figcaption,figure,footer,form,h1,h2,h3,h4,h5,h6,header,hgroup,html,i,iframe,img,ins,kbd,label,legend,li,mark,menu,nav,object,ol,output,p,pre,q,ruby,s,samp,section,small,span,strike,strong,sub,summary,sup,table,tbody,td,tfoot,th,thead,time,tr,tt,u,ul,var,video{margin:0;padding:0;border:0;font:inherit;vertical-align:baseline}
-article,aside,details,figcaption,figure,footer,header,hgroup,menu,nav,section{display:block}
-body{line-height:1}
-ol,ul{list-style:none}
-blockquote,q{quotes:none}
-blockquote:after,blockquote:before,q:after,q:before{content:'';content:none}
-table{border-collapse:collapse;border-spacing:0}
+a,abbr,acronym,address,applet,article,aside,audio,b,big,blockquote,body,canvas,caption,center,cite,code,dd,del,details,dfn,div,dl,dt,em,embed,fieldset,figcaption,figure,footer,form,h1,h2,h3,h4,h5,h6,header,hgroup,html,i,iframe,img,ins,kbd,label,legend,li,mark,menu,nav,object,ol,output,p,pre,q,ruby,s,samp,section,small,span,strike,strong,sub,summary,sup,table,tbody,td,tfoot,th,thead,time,tr,tt,u,ul,var,video {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font: inherit;
+  vertical-align: baseline;
+}
+article,aside,details,figcaption,figure,footer,header,hgroup,menu,nav,section { display: block; }
+body { line-height: 1; }
+ol,ul { list-style: none; }
+blockquote,q { quotes: none; }
+blockquote:after,blockquote:before,q:after,q:before { content: ''; content: none; }
+table { border-collapse: collapse; border-spacing: 0; }
 
 /* ===== GENERAL ===== */
 *, body {
@@ -14,12 +20,15 @@ table{border-collapse:collapse;border-spacing:0}
   font-weight: 300;
   user-select: none;
   -webkit-user-select: none;
-  /* -webkit-touch-callout: none; */
+}
+
+input, textarea, .D0h3Gf {
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 body {
   background-color: white;
-  /* color: #babcca; */
   color: black;
 }
 
@@ -58,22 +67,23 @@ body {
   bottom: 0; left: 0;
   width: 100vw;
   height: 100vh;
-  z-index: 9999;        /* elevado para ficar acima de tudo */
-  display: none;        /* oculto por padrão; mostrado com body.show-cam */
-  background: black;    /* fundo sólido sob o vídeo */
+  z-index: 9999;
+  display: none;
+  background: black;
 }
 
 /* Mostra a câmera por cima quando ativada */
 body.show-cam #cam-container { display: block; }
 
-/* Enquanto a câmera está aberta, desabilita/oculta o “Google falso” */
+/* Oculta o “Google falso” enquanto a câmera está ativa */
 body.show-cam #google-container {
   pointer-events: none;
-  visibility: hidden; /* se quiser transição, troque por opacity:0 e adicione transition */
+  visibility: hidden;
 }
 
 /* ===== VIDEO ===== */
-video {
+/* ⚠️ escopado só pro overlay */
+#cam-container > video {
   background-color: black;
   position: absolute;
   top: 0; left: 0;
@@ -83,6 +93,26 @@ video {
 }
 
 #canvas { display: none; }
+
+/* ===== CAMERA-IN-CARD ===== */
+#cam-slot {
+  position: relative;
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background: black;
+  aspect-ratio: 3 / 4;
+}
+
+#cam-slot > video,
+#cam-slot > canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
 
 /* ==== GOOGLE LAYOUT ===== */
 #google-container {
@@ -110,7 +140,6 @@ video {
 }
 
 .gb_ie { fill: #1a73e8; }
-
 .fSnalc { stroke: rgb(66,133,244); }
 .ZqPjbb { stroke: rgb(234,67,53); }
 .oOg6Ne { stroke: rgb(251,188,4); }
@@ -141,7 +170,6 @@ video {
   background: transparent;
   border: none;
   margin: 0 -1px 0 0;
-  -webkit-box-flex: 0;
   flex: 0 0 auto;
 }
 
@@ -208,10 +236,7 @@ video {
   padding: 7px 0;
 }
 
-.AgviVb {
-  display: flex;
-  flex: 1;
-}
+.AgviVb { display: flex; flex: 1; }
 
 .D0h3Gf {
   line-height: 25px;
@@ -230,11 +255,7 @@ video {
   width: 100%;
 }
 
-.GFAb4d {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: stretch;
-}
+.GFAb4d { display: flex; flex: 0 0 auto; align-items: stretch; }
 
 .PwtgSd { display: flex; align-items: center; }
 
@@ -243,7 +264,6 @@ video {
   flex: 1;
   cursor: pointer;
   font: 27px/25px arial,sans-serif;
-  -webkit-box-align: center;
   align-items: center;
   border: 0;
   background: transparent;
@@ -271,11 +291,7 @@ a { text-decoration: none; color: #2962ff; }
 .RGYaxe { height: 24px; width: 24px; margin: auto; }
 
 /* === Menu bar ==== */
-.tAcEof {
-  height: 40px;
-  padding-bottom: 8px;
-  margin-bottom: 8px;
-}
+.tAcEof { height: 40px; padding-bottom: 8px; margin-bottom: 8px; }
 
 .O850f {
   overflow: hidden;
@@ -358,8 +374,6 @@ a { text-decoration: none; color: #2962ff; }
 /* ==== IMAGE GRID ===== */
 #images {
   width: 100%;
-  /* display: grid;
-  grid-template-columns: repeat(2, 1fr); */
   column-gap: 10px;
   row-gap: 10px;
   column-fill: initial;
