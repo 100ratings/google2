@@ -185,8 +185,9 @@ async function loadImg(word) {
 
       if (imgEl && hit?.webformatURL) imgEl.src = hit.webformatURL;
 
-      const descText = (hit?.tags || hit?.user || "").toString();
-      if (descEl) descEl.textContent = descText;
+let descText = (hit?.tags || hit?.user || "").toString(); // corta em vírgulas ou espaços e limita a 4 palavras
+descText = descText.split(/[, ]+/).slice(0, 4).join(", ");
+if (descEl) descEl.textContent = descText;
 
       idx++;
     });
@@ -195,3 +196,4 @@ async function loadImg(word) {
     document.querySelectorAll(".i .desc").forEach(d => d.textContent = "Erro ao carregar imagens.");
   }
 }
+
