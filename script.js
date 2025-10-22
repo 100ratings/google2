@@ -1,3 +1,6 @@
+// script.js — versão otimizada para PT-BR (Wikimedia + Unsplash fallback)
+// Mantém todo o comportamento original (câmera, UI, clique nos cards, etc.)
+
 let i = 0;
 let selfieCam = false;
 
@@ -56,7 +59,7 @@ function updateUIWithWord(newWord) {
   // atualiza todos os spans <span class="word"> com o termo
   document.querySelectorAll("span.word").forEach(s => { s.textContent = word; });
 
-  // 🚀 SEMPRE buscar no Unsplash (nada local)
+  // 🚀 Buscar imagens
   loadImg(word);
 }
 
@@ -94,47 +97,70 @@ function shutterPress(e) {
   }
 }
 
-// 🌐 Busca no Unsplash (sempre remota)
+/* ==============================
+   NOVO: Busca PT-BR + fallback
+   ============================== */
+
+// 🌐 Busca imagens priorizando Wikimedia (PT-BR). Se vazio, fallback para Unsplash.
 async function loadImg(word) {
   try {
     const q = encodeURIComponent(word || "");
-    const url = `https://api.unsplash.com/search/photos?query=${q}&per_page=9&client_id=qrEGGV7czYXuVDfWsfPZne88bLVBZ3NLTBxm_Lr72G8`;
 
-    const resp = await fetch(url);
-    if (!resp.ok) throw new Error(`Unsplash HTTP ${resp.status}`);
-    const data = await resp.json();
+    // 1) Wikimedia Commons (em PT-BR; namespace 6 = arquivos/imagens)
+    const wiki = `https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*`
+      + `&uselang=pt-br&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=640`
+      + `&generator=search&gsrsearch=${q}&gsrlimit=9&gsrnamespace=6`;
 
-    const results = Array.isArray(data.results) ? data.results : [];
-    const cards = document.querySelectorAll(".i");
+    const r = await fetch(wiki);
+    if (r.ok) {
+      const data = await r.json();
+      const pages = data?.query?.pages ? Object.values(data.query.pages) : [];
+      const urls = pages
+        .map(p => {
+          const ii = p?.imageinfo?.[0];
+          return ii?.thumburl || ii?.url || null;
+        })
+        .filter(Boolean);
 
-    if (results.length === 0) {
-      // Sem resultados: limpa thumbs e mostra mensagem
-      cards.forEach(image => {
-        const imgEl = image.querySelector("img");
-        const descEl = image.querySelector(".desc");
-        if (imgEl) imgEl.removeAttribute("src");
-        if (descEl) descEl.textContent = "Nenhum resultado encontrado.";
-      });
+      if (urls.length) {
+        setCardsFromUrls(urls, pages.map(p => p?.title || word));
+        return; // ✅ já preencheu com PT-BR
+      }
+    }
+
+    // 2) Fallback: Unsplash (mantém sua chave atual)
+    const u = `https://api.unsplash.com/search/photos?query=${q}&per_page=9&client_id=qrEGGV7czYXuVDfWsfPZne88bLVBZ3NLTBxm_Lr72G8`;
+    const rs = await fetch(u);
+    if (!rs.ok) throw new Error(`Unsplash HTTP ${rs.status}`);
+    const js = await rs.json();
+
+    const results = Array.isArray(js.results) ? js.results : [];
+    if (!results.length) {
+      document.querySelectorAll(".i .desc").forEach(d => d.textContent = "Nenhum resultado encontrado.");
+      document.querySelectorAll(".i img").forEach(img => img.removeAttribute("src"));
       return;
     }
 
-    let idx = 0;
-    cards.forEach(image => {
-      const hit = results[idx % results.length];
-      const imgEl = image.querySelector("img");
-      const descEl = image.querySelector(".desc");
+    setCardsFromUrls(
+      results.map(h => h?.urls?.small).filter(Boolean),
+      results.map(h => (h?.description || h?.alt_description || word))
+    );
 
-      if (imgEl && hit?.urls?.small) imgEl.src = hit.urls.small;
-
-      // Usa description → alt_description → vazio
-      const descText = (hit?.description || hit?.alt_description || "").toString();
-      if (descEl) descEl.textContent = descText;
-
-      idx++;
-    });
   } catch (err) {
     console.error('loadImg error:', err);
-    // fallback visual simples
     document.querySelectorAll(".i .desc").forEach(d => d.textContent = "Erro ao carregar imagens.");
   }
+}
+
+// Helper para preencher os cards .i de forma estável
+function setCardsFromUrls(urls, descs = []) {
+  let idx = 0;
+  document.querySelectorAll(".i").forEach(card => {
+    const imgEl = card.querySelector("img");
+    const descEl = card.querySelector(".desc");
+    const u = urls[idx % urls.length];
+    if (imgEl && u) imgEl.src = u;
+    if (descEl) descEl.textContent = (descs[idx] || "").toString();
+    idx++;
+  });
 }
