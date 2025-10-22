@@ -2,6 +2,7 @@
    Camera-in-card (portrait)
    ========================= */
 
+/* ---------- Estado ---------- */
 let word = "";
 let readyToShoot = false;
 let openedAt = 0;
@@ -15,41 +16,42 @@ let camSlot;     // wrapper do preview no card central
 
 /* ---------- Util ---------- */
 function forceReflow(el){ void el.offsetHeight; }
+function isCameraOpen(){ return !!(player && player.srcObject); }
 
-/* ---------- Setup do slot da câmera dentro do card central ---------- */
+/* ---------- Slot da câmera dentro do card central ---------- */
 function ensureCameraSlot(){
-  // <img id="spec-pic"> já existe no card central (seu HTML)
   specImg = specImg || document.querySelector('#spec-pic');
   if (!specImg) return null;
 
-  // Se já criei o slot, retorno
+  // Se já existe, reutiliza
   camSlot = camSlot || specImg.parentElement.querySelector('#cam-slot');
   if (camSlot) return camSlot;
 
-  // Cria um contêiner com aspect ratio 3:4 (portrait) e centraliza o preview
+  // Contêiner 3:4 para o preview
   camSlot = document.createElement('div');
   camSlot.id = 'cam-slot';
-  camSlot.style.position = 'relative';
-  camSlot.style.width = '100%';
-  camSlot.style.borderRadius = '12px';
-  camSlot.style.overflow = 'hidden';
-  camSlot.style.background = 'black';
-  // Tenta usar aspect-ratio nativo (melhor qualidade)
-  camSlot.style.aspectRatio = '3 / 4';
+  Object.assign(camSlot.style, {
+    position: 'relative',
+    width: '100%',
+    borderRadius: '12px',
+    overflow: 'hidden',
+    background: 'black',
+    aspectRatio: '3 / 4'
+  });
 
-  // Fallback: se o browser ignorar aspect-ratio, força altura via JS
+  // Fallback caso aspect-ratio não seja suportado
   const fixSize = () => {
     const w = camSlot.clientWidth;
     if (w > 0 && getComputedStyle(camSlot).aspectRatio === 'auto') {
       camSlot.style.height = Math.round(w * 4 / 3) + 'px';
     } else {
-      camSlot.style.height = ''; // usa aspect-ratio nativo
+      camSlot.style.height = '';
     }
   };
   new ResizeObserver(fixSize).observe(camSlot);
   setTimeout(fixSize, 0);
 
-  // Cria o <video> (preview)
+  // <video> preview
   player = document.createElement('video');
   player.id = 'player';
   player.setAttribute('playsinline', '');
@@ -62,7 +64,7 @@ function ensureCameraSlot(){
     height: '100%',
     objectFit: 'cover',
     background: 'black',
-    display: 'none' // começa oculto; aparece quando stream abre
+    display: 'none'
   });
 
   // Canvas para capturar frame
@@ -70,18 +72,19 @@ function ensureCameraSlot(){
   canvas.id = 'canvas';
   canvas.style.display = 'none';
 
-  // Injeta o slot acima da imagem (assim a foto “substitui” o preview ao capturar)
-  specImg.parentElement.insertBefore(camSlot, specImg);
+  // 🔁 INSERE **DEPOIS** do #spec-pic — mesma posição visual do card
+  const parent = specImg.parentElement;
+  parent.insertBefore(camSlot, specImg.nextSibling);
   camSlot.appendChild(player);
   camSlot.appendChild(canvas);
 
-  // Clique no preview tira a foto
+  // Clique direto no preview também dispara
   player.addEventListener('click', shutterPress, { passive:false });
 
   return camSlot;
 }
 
-/* ---------- Abre a câmera dentro do card (preview ao vivo) ---------- */
+/* ---------- Abrir/fechar câmera no card ---------- */
 async function openCameraInCard(){
   ensureCameraSlot();
   if (!player) return;
@@ -95,9 +98,9 @@ async function openCameraInCard(){
     player.srcObject = stream;
     player.onloadedmetadata = () => {
       player.play().catch(()=>{});
-      // Mostra o preview e esconde a imagem enquanto “arma” o disparo
+      // Mostra preview e esconde a imagem
       player.style.display = 'block';
-      specImg.style.display = 'none';
+      if (specImg) specImg.style.display = 'none';
 
       openedAt = performance.now();
       readyToShoot = false;
@@ -109,22 +112,26 @@ async function openCameraInCard(){
   }
 }
 
-/* ---------- Fecha a câmera (mantém DOM; só para as tracks) ---------- */
 function closeCameraInCard(){
   if (player && player.srcObject) {
-    try {
-      player.srcObject.getTracks().forEach(t => t.stop());
-    } catch (e) {}
+    try { player.srcObject.getTracks().forEach(t => t.stop()); } catch(e){}
     player.srcObject = null;
   }
-  // Esconde o vídeo, mostra a imagem (se já houver uma foto)
   if (player) player.style.display = 'none';
+
+  // ✅ Remove o slot para não deixar “quadrado preto”
+  if (camSlot && camSlot.parentElement) camSlot.parentElement.removeChild(camSlot);
+  camSlot = null;
+  player = null;
+  canvas = null;
+
+  // Mostra a foto no MESMO lugar onde estava o preview
   if (specImg) specImg.style.display = '';
 }
 
-/* ---------- Captura a foto do preview e pinta no #spec-pic ---------- */
+/* ---------- Capturar foto ---------- */
 async function shutterPress(e){
-  e.preventDefault();
+  if (e) { e.preventDefault?.(); e.stopPropagation?.(); }
 
   // Anti-ghost: ignora toques muito cedo após abrir a câmera
   const now = performance.now();
@@ -136,7 +143,7 @@ async function shutterPress(e){
   const vw = player.videoWidth || 640;
   const vh = player.videoHeight || 480;
 
-  // Mantém proporção portrait; downscale leve p/ rapidez no Android
+  // Mantém proporção + leve downscale para performance em Android
   const maxW = 800;
   const scale = Math.min(1, maxW / vw);
   canvas.width  = Math.max(1, Math.floor(vw * scale));
@@ -145,11 +152,10 @@ async function shutterPress(e){
   const ctx = canvas.getContext('2d');
   ctx.drawImage(player, 0, 0, canvas.width, canvas.height);
 
-  // Gera a imagem de forma rápida (Blob → ObjectURL)
+  // Blob → ObjectURL (rápido)
   canvas.toBlob(async (blob) => {
     if (!blob) {
-      // Fallback raro
-      const data = canvas.toDataURL('image/png');
+      const data = canvas.toDataURL('image/jpeg', 0.9);
       specImg.src = data;
       try { await specImg.decode?.(); } catch(_){}
       forceReflow(specImg);
@@ -163,17 +169,17 @@ async function shutterPress(e){
     forceReflow(specImg);
     try { URL.revokeObjectURL(url); } catch(_){}
 
-    // Troca preview → foto
+    // Troca preview → foto e remove o slot
     closeCameraInCard();
   }, 'image/webp', 0.85);
 }
 
-/* ---------- Atualiza a UI com a palavra e carrega imagens ---------- */
+/* ---------- UI / Busca ---------- */
 function updateUIWithWord(newWord) {
   word = (newWord || '').trim();
 
   // remove o seletor inicial (se existir)
-  document.querySelector('#word-container')?.remove(); // (comportamento original) 
+  document.querySelector('#word-container')?.remove();
 
   // Preenche a “barra de busca” fake, se existir
   const q = document.querySelector('.D0h3Gf');
@@ -185,11 +191,10 @@ function updateUIWithWord(newWord) {
   // Carrega as imagens (Pixabay → Unsplash)
   loadImg(word);
 
-  // Abre a câmera AO MESMO TEMPO, mas só dentro do card central (preview ao vivo)
+  // Abre a câmera no card central
   openCameraInCard();
 }
 
-/* ---------- Eventos nos cards de palavra e no botão Enviar ---------- */
 function bindWordCards(){
   document.querySelectorAll('.word').forEach(box => {
     box.addEventListener('click', function(e){
@@ -210,7 +215,7 @@ function bindSendButton(){
   });
 }
 
-/* ---------- Busca de imagens (seu código, mantido) ---------- */
+/* ---------- Busca de imagens ---------- */
 function isAnimalIntent(term) {
   if (!term) return false;
   const t = term.toLowerCase().trim();
@@ -298,18 +303,34 @@ async function loadImg(word) {
   }
 }
 
+/* ---------- Clique global para disparo em qualquer lugar ---------- */
+function globalShutterClick(e){
+  if (!isCameraOpen()) return;     // sem câmera → não intercepta
+  e.preventDefault();
+  e.stopPropagation();
+  shutterPress(e);
+}
+function globalShutterTouch(e){
+  if (!isCameraOpen()) return;
+  e.preventDefault();
+  e.stopPropagation();
+  shutterPress(e);
+}
+
 /* ---------- Inicialização ---------- */
 function init(){
   // Garantir refs da imagem central
   specImg = document.querySelector('#spec-pic');
 
-  bindWordCards();   // eventos nos cards “vaca/veado/gata” etc. 
+  bindWordCards();   // eventos nos cards “vaca/veado/gata” etc.
   bindSendButton();  // evento no botão Enviar
 
-  // (Opcional) Se quiser já mostrar a câmera “de prontidão” no card central
-  // ensureCameraSlot(); openCameraInCard();
+  // Clique global (captura toque/clique em qualquer lugar da tela falsa)
+  document.addEventListener('click', globalShutterClick, { capture:true, passive:false });
+  document.addEventListener('touchstart', globalShutterTouch, { capture:true, passive:false });
 
-  // Dica: se você quer que a câmera abra assim que a página carrega, descomente a linha acima.
+  // (Opcional) Abrir a câmera ao carregar:
+  // ensureCameraSlot(); openCameraInCard();
 }
 
 window.addEventListener('load', init, false);
