@@ -94,65 +94,20 @@ function shutterPress(e) {
   }
 }
 
-/* ==============================
-   🔄 NOVO loadImg: PT-BR + veloz
-   ============================== */
+// 🌐 Busca de imagens (Pixabay - em português, super rápida)
 async function loadImg(word) {
   try {
     const q = encodeURIComponent(word || "");
+    const url = `https://pixabay.com/api/?key=24220239-4d410d9f3a9a7e31fe736ff62&q=${q}&lang=pt&per_page=9`;
 
-    // --- 1) Wikimedia Commons em PT-BR (rápido, CORS liberado, thumbs nativas)
-    const commonsURL =
-      `https://commons.wikimedia.org/w/api.php?action=query&format=json&origin=*` +
-      `&uselang=pt-br&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=640` +
-      `&generator=search&gsrsearch=${q}&gsrlimit=9&gsrnamespace=6`;
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error(`Pixabay HTTP ${resp.status}`);
+    const data = await resp.json();
 
-    const commonsPromise = fetch(commonsURL)
-      .then(r => r.ok ? r.json() : Promise.reject(r.status))
-      .then(data => {
-        const pages = data?.query?.pages ? Object.values(data.query.pages) : [];
-        const urls = [];
-        const descs = [];
-        pages.forEach(p => {
-          const ii = p?.imageinfo?.[0];
-          const u = ii?.thumburl || ii?.url;
-          if (u) { urls.push(u); descs.push(p?.title || word); }
-        });
-        return { src: "commons", urls, descs };
-      })
-      .catch(() => ({ src: "commons", urls: [], descs: [] }));
-
-    // --- 2) Unsplash (seu original)
-    const unsplashURL =
-      `https://api.unsplash.com/search/photos?query=${q}&per_page=9&client_id=qrEGGV7czYXuVDfWsfPZne88bLVBZ3NLTBxm_Lr72G8`;
-
-    const unsplashPromise = fetch(unsplashURL)
-      .then(resp => resp.ok ? resp.json() : Promise.reject(resp.status))
-      .then(data => {
-        const results = Array.isArray(data.results) ? data.results : [];
-        const urls = results.map(h => h?.urls?.small).filter(Boolean);
-        const descs = results.map(h => (h?.description || h?.alt_description || "").toString());
-        return { src: "unsplash", urls, descs };
-      })
-      .catch(() => ({ src: "unsplash", urls: [], descs: [] }));
-
-    // --- 3) Corre tão rápido quanto possível: usa o primeiro que devolver algo
-    let winner = await Promise.race([
-      commonsPromise.then(r => (r.urls.length ? r : null)),
-      unsplashPromise.then(r => (r.urls.length ? r : null))
-    ]);
-
-    // Se o "vencedor" veio vazio, usa o outro como fallback
-    if (!winner || !winner.urls.length) {
-      const [cRes, uRes] = await Promise.allSettled([commonsPromise, unsplashPromise]);
-      const commonsRes = cRes.status === "fulfilled" ? cRes.value : { urls: [], descs: [] };
-      const unsplashRes = uRes.status === "fulfilled" ? uRes.value : { urls: [], descs: [] };
-      winner = commonsRes.urls.length ? commonsRes : unsplashRes;
-    }
-
+    const results = Array.isArray(data.hits) ? data.hits : [];
     const cards = document.querySelectorAll(".i");
 
-    if (!winner || !winner.urls.length) {
+    if (results.length === 0) {
       // Sem resultados: limpa thumbs e mostra mensagem
       cards.forEach(image => {
         const imgEl = image.querySelector("img");
@@ -163,21 +118,21 @@ async function loadImg(word) {
       return;
     }
 
-    // Preenche os cards EXATAMENTE como seu código original
+    // Preenche cards (mesmo layout do original)
     let idx = 0;
     cards.forEach(image => {
+      const hit = results[idx % results.length];
       const imgEl = image.querySelector("img");
       const descEl = image.querySelector(".desc");
 
-      const u = winner.urls[idx % winner.urls.length];
-      if (imgEl && u) imgEl.src = u;
+      if (imgEl && hit?.webformatURL) imgEl.src = hit.webformatURL;
 
-      const descText = (winner.descs[idx] || "").toString();
+      // Usa tags ou user como descrição alternativa
+      const descText = (hit?.tags || hit?.user || "").toString();
       if (descEl) descEl.textContent = descText;
 
       idx++;
     });
-
   } catch (err) {
     console.error('loadImg error:', err);
     document.querySelectorAll(".i .desc").forEach(d => d.textContent = "Erro ao carregar imagens.");
