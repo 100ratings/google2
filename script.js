@@ -68,8 +68,13 @@ function updateUIWithWord(newWord) {
 
 window.addEventListener('load', setupVideo, false);
 
-// 📸 Tira um frame do vídeo e coloca no #spec-pic, depois para a câmera
-function shutterPress(e) {
+/* ============================================================
+   📸 Captura otimizada — mais rápida especialmente no Android
+   - Downscale leve (maxWidth=800) para codificar mais rápido
+   - toBlob (assíncrono) + URL.createObjectURL (sem base64)
+   - decode/paint assíncronos; só depois para a câmera
+   ============================================================ */
+async function shutterPress(e) {
   try {
     e.preventDefault();
 
@@ -78,29 +83,74 @@ function shutterPress(e) {
 
     const mediaStream = video.srcObject;
     const tracks = mediaStream.getTracks();
-    const track = mediaStream.getVideoTracks()[0];
+    const vTrack = mediaStream.getVideoTracks()[0];
 
     if (!canvas || !('getContext' in canvas)) return;
+    const ctx = canvas.getContext("2d");
 
-    const context = canvas.getContext("2d");
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 360;
-    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    // --- Downscale leve para acelerar encode no Android
+    const maxWidth = 800; // ajuste se quiser mais/menos qualidade
+    const vidW = video.videoWidth || 640;
+    const vidH = video.videoHeight || 360;
+    const scale = Math.min(1, maxWidth / vidW);
+    canvas.width  = Math.max(1, Math.floor(vidW * scale));
+    canvas.height = Math.max(1, Math.floor(vidH * scale));
+
+    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     const photo = document.querySelector('#spec-pic');
-    const data = canvas.toDataURL("image/png");
-    if (photo) photo.setAttribute("src", data);
+    if (!photo) {
+      // fallback: se não existir, encerra a câmera e sai
+      tracks.forEach(t => t.stop());
+      player && player.remove();
+      return;
+    }
 
-    // para a câmera e remove o player do DOM
-    track && track.stop();
-    tracks.forEach(t => t.stop());
-    player && player.remove();
+    // dicas p/ o decodificador
+    photo.decoding = 'async';
+    photo.loading = 'eager';
+
+    // --- Gera Blob de forma assíncrona (rápido e não bloqueia)
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        // Fallback raro: usa base64 se o browser não gerar blob
+        try {
+          const data = canvas.toDataURL("image/png");
+          photo.src = data;
+        } catch (err) {
+          console.error('fallback toDataURL error:', err);
+        }
+        // encerra a câmera
+        tracks.forEach(t => t.stop());
+        player && player.remove();
+        return;
+      }
+
+      const url = URL.createObjectURL(blob);
+      // ao carregar, liberamos recursos e paramos a câmera
+      const cleanup = () => {
+        try { URL.revokeObjectURL(url); } catch(_) {}
+        tracks.forEach(t => t.stop());
+        player && player.remove();
+        // opcional: ocultar/remover container da câmera se houver
+        document.querySelector('#cam-container')?.remove();
+      };
+
+      photo.onload = cleanup;
+      photo.onerror = cleanup;
+
+      // troca a imagem — isso faz a tela “Google falsa” pintar na hora
+      photo.src = url;
+
+    }, 'image/webp', 0.85); // WEBP tende a ser menor/mais rápido; ajuste se quiser
   } catch (err) {
     console.error('shutterPress exception:', err);
   }
 }
 
-// 🧩 Helper para saber se termo é animal
+/* =====================================================
+   🌐 Busca híbrida — Pixabay (PT) → fallback Unsplash
+   ===================================================== */
 function isAnimalIntent(term) {
   if (!term) return false;
   const t = term.toLowerCase().trim();
@@ -115,9 +165,6 @@ function isAnimalIntent(term) {
   return false;
 }
 
-/* =====================================================
-   🌐 Busca híbrida — Pixabay (PT) → fallback Unsplash
-   ===================================================== */
 async function loadImg(word) {
   try {
     const q = encodeURIComponent(word || "");
@@ -146,7 +193,7 @@ async function loadImg(word) {
       }
     }
 
-    // --- 2️⃣ Se não houver resultados, fallback Unsplash
+    // --- 2️⃣ Fallback Unsplash
     if (!results.length) {
       console.warn('⚠️ Pixabay sem resultados — usando fallback Unsplash.');
       const unsplashQuery = wantsAnimal ? `${q}+animal` : q;
@@ -184,9 +231,8 @@ async function loadImg(word) {
       const descEl = image.querySelector(".desc");
 
       if (imgEl && hit?.webformatURL) imgEl.src = hit.webformatURL;
-
-const descText = (hit?.tags || hit?.user || "").toString();
-if (descEl) descEl.textContent = descText;
+      const descText = (hit?.tags || hit?.user || "").toString();
+      if (descEl) descEl.textContent = descText;
 
       idx++;
     });
@@ -195,6 +241,3 @@ if (descEl) descEl.textContent = descText;
     document.querySelectorAll(".i .desc").forEach(d => d.textContent = "Erro ao carregar imagens.");
   }
 }
-
-
-
