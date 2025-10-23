@@ -16,8 +16,13 @@ table { border-collapse: collapse; border-spacing: 0; }
 /* ===== GENERAL ===== */
 *, body {
   box-sizing: border-box;
-  font: 1em/1em -apple-system, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.2;
   font-weight: 300;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   user-select: none;
   -webkit-user-select: none;
 }
@@ -30,6 +35,11 @@ input, textarea, .D0h3Gf {
 body {
   background-color: white;
   color: black;
+  overflow-x: hidden;      /* impede rolagem lateral */
+  overscroll-behavior-x: none; /* evita “puxar” lateral */
+}
+html {
+  overflow-x: hidden;
 }
 
 /* ===== WORD SELECT ===== */
@@ -415,3 +425,4 @@ a { text-decoration: none; color: #2962ff; }
   line-height: 14px;
   margin-bottom: 3px;
 }
+
