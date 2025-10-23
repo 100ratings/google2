@@ -35,8 +35,8 @@ input, textarea, .D0h3Gf {
 body {
   background-color: white;
   color: black;
-  overflow-x: hidden;      /* impede rolagem lateral */
-  overscroll-behavior-x: none; /* evita “puxar” lateral */
+  overflow-x: hidden;
+  overscroll-behavior-x: none;
 }
 html {
   overflow-x: hidden;
@@ -81,18 +81,13 @@ html {
   display: none;
   background: black;
 }
-
-/* Mostra a câmera por cima quando ativada */
 body.show-cam #cam-container { display: block; }
-
-/* Oculta o “Google falso” enquanto a câmera está ativa */
 body.show-cam #google-container {
   pointer-events: none;
   visibility: hidden;
 }
 
 /* ===== VIDEO ===== */
-/* ⚠️ escopado só pro overlay */
 #cam-container > video {
   background-color: black;
   position: absolute;
@@ -101,7 +96,6 @@ body.show-cam #google-container {
   height: 100vh;
   object-fit: cover;
 }
-
 #canvas { display: none; }
 
 /* ===== CAMERA-IN-CARD ===== */
@@ -113,7 +107,6 @@ body.show-cam #google-container {
   background: black;
   aspect-ratio: 3 / 4;
 }
-
 #cam-slot > video,
 #cam-slot > canvas {
   position: absolute;
@@ -155,7 +148,7 @@ body.show-cam #google-container {
 .oOg6Ne { stroke: rgb(251,188,4); }
 .aPiskd { stroke: rgb(52,168,83); }
 
-/* search: */
+/* search */
 .LBH5L {
   background: none;
   border-radius: 20px;
@@ -192,15 +185,7 @@ body.show-cam #google-container {
   position: relative;
 }
 
-.NoilWe {
-  display: inline-block;
-  position: relative;
-  fill: currentcolor;
-  line-height: 24px;
-  height: 24px;
-  width: 24px;
-}
-
+.NoilWe { display: inline-block; position: relative; fill: currentcolor; line-height: 24px; height: 24px; width: 24px; }
 .nFZEq { position: absolute; top: 0; left: 0; opacity: 0; }
 
 .AH0rqb {
@@ -215,37 +200,11 @@ body.show-cam #google-container {
   background-color: transparent;
 }
 
-.uFUCJe {
-  display: inline-block;
-  position: relative;
-  fill: #4285f4;
-  line-height: 24px;
-  height: 24px;
-  width: 24px;
-  background-color: transparent;
-}
+.uFUCJe { display: inline-block; position: relative; fill: #4285f4; line-height: 24px; height: 24px; width: 24px; background-color: transparent; }
+.vyDMJf-gXhOqb-Bz112c { display: inline-block; fill: currentColor; height: 24px; width: 24px; }
+.vyDMJf-gXhOqb-Bz112c svg { display: block; height: 100%; width: 100%; }
 
-.vyDMJf-gXhOqb-Bz112c {
-  display: inline-block;
-  fill: currentColor;
-  height: 24px;
-  line-height: 24px;
-  position: relative;
-  width: 24px;
-}
-
-.vyDMJf-gXhOqb-Bz112c svg {
-  display: block;
-  height: 100%;
-  width: 100%;
-}
-
-.BWjQSd {
-  flex: 1;
-  display: flex;
-  padding: 7px 0;
-}
-
+.BWjQSd { flex: 1; display: flex; padding: 7px 0; }
 .AgviVb { display: flex; flex: 1; }
 
 .D0h3Gf {
@@ -257,129 +216,46 @@ body.show-cam #google-container {
   font-family: Roboto,HelveticaNeue,Arial,sans-serif;
   font-size: 16px;
   color: rgba(0,0,0,0.87);
-  word-wrap: break-word;
   outline: none;
-  display: flex;
   flex: 1;
-  -webkit-tap-highlight-color: transparent;
   width: 100%;
 }
 
 .GFAb4d { display: flex; flex: 0 0 auto; align-items: stretch; }
-
 .PwtgSd { display: flex; align-items: center; }
-
-.P5Zfw {
-  display: flex;
-  flex: 1;
-  cursor: pointer;
-  font: 27px/25px arial,sans-serif;
-  align-items: center;
-  border: 0;
-  background: transparent;
-  padding: 0 9px 0 11px;
-  color: #80868b;
-  margin: 0;
-  right: 0;
-}
-
+.P5Zfw { display: flex; flex: 1; cursor: pointer; font: 27px/25px arial,sans-serif; align-items: center; border: 0; background: transparent; padding: 0 9px 0 11px; color: #80868b; margin: 0; right: 0; }
 .P0kLqd { height: 24px; }
 
 a { text-decoration: none; color: #2962ff; }
-
-.r5jQRd {
-  background: transparent;
-  border: 0;
-  border-radius: 0 8px 8px 0;
-  cursor: pointer;
-  display: flex;
-  flex: 0 0 auto;
-  height: 48px;
-  width: 48px;
-}
-
+.r5jQRd { background: transparent; border: 0; height: 48px; width: 48px; display: flex; }
 .RGYaxe { height: 24px; width: 24px; margin: auto; }
 
 /* === Menu bar ==== */
 .tAcEof { height: 40px; padding-bottom: 8px; margin-bottom: 8px; }
-
-.O850f {
-  overflow: hidden;
-  height: 48px;
-  padding-bottom: 8px;
-  position: relative;
-}
-
+.O850f { overflow: hidden; height: 48px; padding-bottom: 8px; position: relative; }
 .pWEaFf {
   background: -webkit-gradient(linear,left top,right top,color-stop(0,rgba(255,255,255,0)),color-stop(100%,#fff));
   border-bottom-right-radius: 8px;
   height: 48px;
   position: absolute;
   pointer-events: none;
-  right: 0;
-  top: 0;
+  right: 0; top: 0;
   width: 24px;
   z-index: 2;
 }
-
 .iSZmU {
-  border-radius: 0;
   box-shadow: 0px 1px 3px 0px rgba(60,64,67,0.08);
   height: 44px;
-  margin: 0 -3px;
   overflow-x: scroll;
   overflow-y: hidden;
   padding: 4px 3px 8px 7px;
   position: relative;
   z-index: 1;
 }
-
-.T47uwc {
-  background-color: #fff;
-  border-top: none;
-  display: inline-block;
-  font-weight: 500;
-  height: 36px;
-  justify-content: space-between;
-  line-height: 27px;
-  overflow: hidden;
-  padding: 0;
-  white-space: nowrap;
-}
-
-.bytUYc {
-  clip: rect(1px,1px,1px,1px);
-  height: 1px;
-  overflow: hidden;
-  position: absolute;
-  -webkit-user-select: none;
-  user-select: none;
-  white-space: nowrap;
-  width: 1px;
-  z-index: -1000;
-}
-
-.NZmxZe {
-  -webkit-tap-highlight-color: rgba(0,0,0,.1);
-  color: rgba(0,0,0,0.54);
-  display: inline-block;
-  padding: 8px 12px;
-  text-align: center;
-  text-transform: none;
-  font-family: Google Sans,Roboto,HelveticaNeue,Arial,sans-serif;
-  font-size: 14px;
-  font-weight: 500;
-  line-height: 27px;
-  white-space: nowrap;
-}
-
-.rQEFy {
-  border-bottom: 2px solid rgb(32,33,36);
-  color: rgb(32,33,36);
-  height: 26px;
-  margin: 0 12px;
-  padding: 0;
-}
+.T47uwc { background-color: #fff; display: inline-block; font-weight: 500; height: 36px; line-height: 27px; white-space: nowrap; }
+.bytUYc { clip: rect(1px,1px,1px,1px); height: 1px; overflow: hidden; position: absolute; width: 1px; z-index: -1000; }
+.NZmxZe { color: rgba(0,0,0,0.54); display: inline-block; padding: 8px 12px; font-size: 14px; font-weight: 500; }
+.rQEFy { border-bottom: 2px solid rgb(32,33,36); color: rgb(32,33,36); height: 26px; margin: 0 12px; }
 
 /* ==== IMAGE GRID ===== */
 #images {
@@ -390,32 +266,26 @@ a { text-decoration: none; color: #2962ff; }
   column-count: 2;
   padding: 8px 10px;
 }
-
 .image {
   position: relative;
   border-radius: 12px;
   margin-bottom: 10px;
   display: inline-block;
-  vertical-align: top;
   width: 100%;
 }
-
 .image img {
   width: 100%;
   border-radius: 12px;
 }
 
+/* 🧩 PATCH — descrição dos cards */
 .title {
   color: #5f6368;
   font-size: 11px;
   line-height: 16px;
   font-weight: 400;
-  text-align: left;
-  letter-spacing: .2px;
   margin-bottom: 0;
 }
-
-/* 🧩 PATCH — descrição dos cards em 1 linha com reticências */
 .desc {
   color: #202124;
   font-size: 11px;
@@ -424,34 +294,28 @@ a { text-decoration: none; color: #2962ff; }
   line-height: 14px;
   margin-bottom: 3px;
 
-  /* 👇 garante 1 linha e adiciona reticências */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   display: block;
   max-width: 100%;
-
-  /* 👇 evita quebra ou hifenização no Android */
   word-break: keep-all;
   hyphens: none;
 }
 
-/* 🧩 PATCH — Correção de tipografia Android */
+/* 🧩 PATCH — tipografia Android */
 html, body {
-  -webkit-text-size-adjust: 100%; /* evita zoom automático de fontes */
+  -webkit-text-size-adjust: 100%;
   text-rendering: optimizeLegibility;
   font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Helvetica, Arial, sans-serif;
   font-size: 16px;
-  line-height: 1.25; /* ligeiramente maior que antes */
+  line-height: 1.25;
   letter-spacing: 0.25px;
   word-spacing: 0.5px;
 }
-
 input, button, .desc, .title, .D0h3Gf {
   font-family: inherit !important;
   line-height: 1.3 !important;
   letter-spacing: 0.25px !important;
   word-spacing: 0.5px !important;
 }
-
-
