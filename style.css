@@ -372,35 +372,3 @@ input, button, .desc, .title, .D0h3Gf {
   padding: 0;
 }
 
-/* 🧩 PATCH — Centralizar itens da tela inicial (2x2) */
-#word-container .item {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;                 /* evita deslocar o texto */
-}
-
-/* centraliza só as palavras dessa tela (não mexe nas <span class="word"> da página Google) */
-#word-container .word {
-  display: block;
-  width: 100%;
-  text-align: center;
-  font-size: 28px;            /* ajuste fino do tamanho */
-  font-weight: 400;
-  letter-spacing: .2px;
-  margin: 0;
-  padding: 0;
-}
-
-/* centraliza o input e o botão dentro do quadrante inferior direito */
-#word-container #wordinput {
-  display: block;
-  width: 70%;
-  margin: 0 auto 12px;        /* centraliza horizontal */
-  text-align: center;
-}
-#word-container #wordbtn {
-  display: block;
-  margin: 6px auto 0;         /* centraliza o botão */
-}
-
