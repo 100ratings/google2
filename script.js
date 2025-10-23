@@ -1,1 +1,312 @@
-(()=>{"use strict";let e,t,n,o,i,r=!1;const a=document.body,s=()=>navigator.mediaDevices&&navigator.mediaDevices.getUserMedia?navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"},audio:!1}):Promise.reject("getUserMedia unsupported"),d=async()=>{try{const e=await s();e.getTracks().forEach(t=>t.stop())}catch(e){console.warn("Pre-permission camera request failed:",e)}},c=()=>{if(!n){n=document.getElementById("cam-container");n||(n=document.createElement("div"),n.id="cam-container",document.body.appendChild(n))}if(!t){t=document.createElement("video"),t.setAttribute("playsinline",""),t.setAttribute("autoplay",""),t.muted=!0,t.style.cssText="position:fixed;inset:0;object-fit:cover;width:100vw;height:100vh;z-index:10000;background:#000",n.appendChild(t)}n.style.cssText="position:fixed;inset:0;z-index:10000;display:block;";n.setAttribute("aria-hidden","false")},l=()=>{n&&(n.style.display="none",n.setAttribute("aria-hidden","true"))},u=e=>{e&&e.getTracks&&e.getTracks().forEach(e=>{try{e.stop()}catch{}})},p=async()=>{if(r)return;try{c();o=await s(),t.srcObject=o,await t.play(),r=!0;const e=e=>{e.preventDefault(),m()},{passive:!1,once:!0};n.addEventListener("pointerdown",e,{passive:!1,once:!0}),n.addEventListener("touchstart",e,{passive:!1,once:!0}),n.addEventListener("click",e,{passive:!1,once:!0})}catch(e){console.error("Failed to open camera:",e),alert("⚠️ Não foi possível abrir a câmera. Permita o acesso nas configurações.")}},m=()=>{try{if(!t||!t.videoWidth){setTimeout(m,50);return}const e=document.createElement("canvas"),n=t.videoWidth||1080,a=t.videoHeight||1920;e.width=n,e.height=a;const s=e.getContext("2d",{willReadFrequently:!1,alpha:!1});s.drawImage(t,0,0,n,a);const d=e.toDataURL("image/jpeg",.92);i||(i=document.getElementById("spec-pic")),i&&(i.src=d,i.decoding="async",i.loading="eager")}catch(e){console.error("Capture error:",e)}finally{y()}},y=()=>{r=!1,t&&t.pause&&t.pause(),t&&(t.srcObject=null),o&&(u(o),o=null),l()};function f(e){document.querySelectorAll(".word").forEach(t=>t.textContent=e)}function v(){const e=document.querySelectorAll("#word-container .item.word");e.forEach(e=>{e.addEventListener("click",()=>{const t=e.dataset.type||e.textContent.trim();t&&(f(t),p())})});const t=document.getElementById("wordbtn"),n=document.getElementById("wordinput");t&&t.addEventListener("click",()=>{const e=(n.value||"").trim();e&&(f(e),p())}),n&&n.addEventListener("keydown",e=>{"Enter"===e.key&&(e.preventDefault(),t.click())})}window.addEventListener("pageshow",()=>{a&&"1"===a.dataset.autorequest&&d()},{once:!0}),window.addEventListener("DOMContentLoaded",()=>{i=document.getElementById("spec-pic"),v()})})();
+/* =========================
+   Camera FULL overlay (portrait)
+   ========================= */
+
+/* ---------- Estado ---------- */
+let word = "";
+let readyToShoot = false;
+let openedAt = 0;
+const ARM_DELAY = 250; // evita disparo acidental em Android/iOS
+
+// Refs fixas (do HTML)
+const bodyEl        = document.body;
+const camContainer  = document.getElementById('cam-container'); // overlay
+const player        = document.getElementById('player');        // <video> dentro do overlay
+const canvas        = document.getElementById('canvas');        // <canvas> dentro do overlay
+let specImg;                                                     // <img id="spec-pic">
+
+/* ---------- Utils ---------- */
+function forceReflow(el){ void el && el.offsetHeight; }
+function isCameraOpen(){ return !!(player && player.srcObject); }
+function stopStream(stream){
+  if (!stream) return;
+  try { stream.getTracks().forEach(t=>t.stop()); } catch(_) {}
+}
+
+/* ---------- helper: truncar descrições (máx. 30 chars) ---------- */
+function truncateText(str, max = 30) {
+  const arr = Array.from((str || '').trim());
+  return arr.length > max ? arr.slice(0, max - 1).join('') + '…' : arr.join('');
+}
+
+/* ---------- Pré-permissão de câmera no load ---------- */
+/* Abre getUserMedia e fecha imediatamente — só para forçar o prompt. */
+async function prewarmPermission(){
+  if (!navigator.mediaDevices?.getUserMedia) return;
+  try {
+    const tmp = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: { facingMode: { ideal: 'environment' } }
+    });
+    stopStream(tmp);
+  } catch (err) {
+    // silencioso: usuário pode negar; tratamos depois ao abrir de verdade
+    console.warn('Pre-permission failed:', err);
+  }
+}
+
+/* ---------- Overlay: abrir/fechar câmera FULL ---------- */
+async function openCameraFull(){
+  if (!navigator.mediaDevices?.getUserMedia) {
+    alert('⚠️ Este navegador não suporta câmera.');
+    return;
+  }
+
+  // Mostrar overlay
+  camContainer?.setAttribute('aria-hidden', 'false');
+  camContainer.style.display = 'block';
+  bodyEl.classList.add('show-cam');
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      audio: false,
+      video: { facingMode: { ideal: 'environment' } }
+    });
+
+    player.srcObject = stream;
+    // iOS precisa garantir playsinline + muted já setados no HTML
+    await player.play().catch(() => {});
+
+    openedAt = performance.now();
+    readyToShoot = false;
+    setTimeout(()=>{ readyToShoot = true; }, ARM_DELAY);
+
+    // Toque/click em QUALQUER LUGAR do overlay dispara
+    camContainer.addEventListener('pointerdown', shutterPress, { passive:false, capture:true });
+    camContainer.addEventListener('touchstart', shutterPress, { passive:false, capture:true });
+    camContainer.addEventListener('click', shutterPress, { passive:false, capture:true });
+
+  } catch (err) {
+    console.error('Falha ao abrir câmera:', err);
+    alert('⚠️ Não foi possível abrir a câmera. Verifique as permissões.');
+    closeCameraFull();
+  }
+}
+
+function closeCameraFull(){
+  // Remover listeners para evitar “cliques fantasmas”
+  camContainer.removeEventListener('pointerdown', shutterPress, true);
+  camContainer.removeEventListener('touchstart', shutterPress, true);
+  camContainer.removeEventListener('click', shutterPress, true);
+
+  // Parar stream
+  if (player) {
+    try { stopStream(player.srcObject); } catch(_){}
+    player.pause?.();
+    player.srcObject = null;
+  }
+
+  // Esconder overlay
+  bodyEl.classList.remove('show-cam');
+  camContainer.setAttribute('aria-hidden', 'true');
+  camContainer.style.display = 'none';
+}
+
+/* ---------- Capturar foto ---------- */
+async function shutterPress(e){
+  if (e) { e.preventDefault?.(); e.stopPropagation?.(); }
+
+  // Anti-ghost: ignora toques prematuros após abrir a câmera
+  const now = performance.now();
+  if (!readyToShoot || (now - openedAt) < ARM_DELAY) return;
+
+  if (!isCameraOpen() || !canvas || !specImg) return;
+
+  try {
+    const vw = player.videoWidth || 1080;
+    const vh = player.videoHeight || 1920;
+
+    // Downscale leve para performance (Android)
+    const maxW = 1024;
+    const scale = Math.min(1, maxW / vw);
+    canvas.width  = Math.max(1, Math.floor(vw * scale));
+    canvas.height = Math.max(1, Math.floor(vh * scale));
+
+    const ctx = canvas.getContext('2d', { willReadFrequently:false, alpha:false });
+    ctx.drawImage(player, 0, 0, canvas.width, canvas.height);
+
+    // Tenta Blob → URL rápido; fallback base64
+    await new Promise((resolve) => {
+      canvas.toBlob(async (blob) => {
+        if (blob) {
+          const url = URL.createObjectURL(blob);
+          specImg.src = url;
+          try { await specImg.decode?.(); } catch(_){}
+          forceReflow(specImg);
+          try { URL.revokeObjectURL(url); } catch(_){}
+          resolve();
+        } else {
+          const data = canvas.toDataURL('image/jpeg', 0.9);
+          specImg.src = data;
+          try { await specImg.decode?.(); } catch(_){}
+          forceReflow(specImg);
+          resolve();
+        }
+      }, 'image/webp', 0.85);
+    });
+  } catch (err) {
+    console.error('Capture error:', err);
+  } finally {
+    // Fecha overlay após capturar
+    closeCameraFull();
+  }
+}
+
+/* ---------- Intenção: animais ---------- */
+function isAnimalIntent(term) {
+  if (!term) return false;
+  const t = term.toLowerCase().trim();
+  const animals = [
+    "gata","gato","gatinha","gatinho","cachorro","cão","cadela","cachorra",
+    "cobra","vaca","touro","galinha","galo","veado","leão","tigre","onça",
+    "puma","pantera","ave","pássaro","pato","cavalo","égua","peixe",
+    "golfinho","baleia","macaco","lobo","raposa","coelho"
+  ];
+  if (animals.includes(t)) return true;
+  if (/\banimal(es)?\b/.test(t)) return true;
+  return false;
+}
+
+/* ---------- Carregar imagens (Pixabay → Unsplash) ---------- */
+async function loadImg(newWord) {
+  try {
+    let searchTerm = (newWord || "").toLowerCase().trim();
+    const wantsAnimal = isAnimalIntent(searchTerm);
+
+    // lapidação p/ “gato/gata”
+    if (["gato","gata","gatinho","gatinha"].includes(searchTerm)) {
+      searchTerm = "gato de estimação, gato doméstico, cat pet";
+    }
+
+    const q = encodeURIComponent(searchTerm);
+
+    // 1) Pixabay (prioritário)
+    const pixParams = new URLSearchParams({
+      key: "24220239-4d410d9f3a9a7e31fe736ff62",
+      q,
+      lang: "pt",
+      per_page: "9",
+      image_type: "photo",
+      safesearch: "true"
+    });
+    if (wantsAnimal) pixParams.set("category", "animals");
+
+    const pixResp = await fetch(`https://pixabay.com/api/?${pixParams.toString()}`);
+    let results = [];
+    if (pixResp.ok) {
+      const data = await pixResp.json();
+      results = Array.isArray(data.hits) ? data.hits : [];
+      if (wantsAnimal && results.length) {
+        const humanRe = /(woman|girl|man|people|modelo|fashion|beauty)/i;
+        results = results.filter(h => !humanRe.test(h?.tags || ""));
+      }
+    }
+
+    // 2) Fallback: Unsplash
+    if (!results.length) {
+      const unsplashQuery = wantsAnimal ? `${q}+animal` : q;
+      const u = `https://api.unsplash.com/search/photos?query=${unsplashQuery}&per_page=9&content_filter=high&client_id=qrEGGV7czYXuVDfWsfPZne88bLVBZ3NLTBxm_Lr72G8`;
+      const resp = await fetch(u);
+      if (resp.ok) {
+        const data = await resp.json();
+        const arr = Array.isArray(data.results) ? data.results : [];
+        results = arr.map(r => ({
+          webformatURL: r?.urls?.small,
+          tags: (r?.description || r?.alt_description || "").toString(),
+          user: "Unsplash"
+        }));
+      }
+    }
+
+    // Preenche os cards .i
+    const cards = document.querySelectorAll('.i');
+    if (!results.length) {
+      cards.forEach(image => {
+        const imgEl  = image.querySelector('img');
+        const descEl = image.querySelector('.desc');
+        if (imgEl) imgEl.removeAttribute('src');
+        if (descEl) descEl.textContent = 'Nenhum resultado encontrado.';
+      });
+      return;
+    }
+
+    let idx = 0;
+    cards.forEach(image => {
+      const hit    = results[idx % results.length];
+      const imgEl  = image.querySelector('img');
+      const descEl = image.querySelector('.desc');
+
+      if (imgEl && hit?.webformatURL) imgEl.src = hit.webformatURL;
+
+      let descText = (hit?.tags || hit?.user || '').toString();
+      descText = descText.replace(/\s*,\s*/g, ', ').replace(/\s{2,}/g, ' ');
+      const short = truncateText(descText, 30);
+
+      if (descEl) descEl.textContent = short;
+      idx++;
+    });
+  } catch (err) {
+    console.error('loadImg error:', err);
+    document.querySelectorAll('.i .desc').forEach(d => d.textContent = 'Erro ao carregar imagens.');
+  }
+}
+
+/* ---------- UI / Busca ---------- */
+function updateUIWithWord(newWord) {
+  word = (newWord || '').trim();
+
+  // remove o seletor inicial (se existir)
+  document.querySelector('#word-container')?.remove();
+
+  // Preenche a “barra de busca” fake, se existir
+  const q = document.querySelector('.D0h3Gf');
+  if (q) q.value = word;
+
+  // Atualiza todos os <span class="word">
+  document.querySelectorAll('span.word').forEach(s => { s.textContent = word; });
+
+  // Carrega as imagens (Pixabay → Unsplash)
+  loadImg(word);
+
+  // Abre a câmera em OVERLAY FULL
+  openCameraFull();
+}
+
+/* ---------- Bindings ---------- */
+function bindWordCards(){
+  document.querySelectorAll('.word').forEach(box => {
+    box.addEventListener('click', function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      const dt = this.getAttribute('data-type') || '';
+      updateUIWithWord(dt);
+    }, { passive:false });
+  });
+}
+
+function bindSendButton(){
+  document.querySelector('#wordbtn')?.addEventListener('click', function(e){
+    e.preventDefault();
+    const inputEl = document.querySelector('#wordinput');
+    const val = (inputEl && 'value' in inputEl) ? inputEl.value : '';
+    updateUIWithWord(val);
+  });
+}
+
+/* ---------- Inicialização ---------- */
+function init(){
+  // Refs
+  specImg = document.querySelector('#spec-pic');
+
+  bindWordCards();
+  bindSendButton();
+
+  // Clique global fora do overlay: não intercepta (overlay já captura)
+  // Pré-permissão se <body data-autorequest="1">
+  if (bodyEl && bodyEl.dataset && bodyEl.dataset.autorequest === "1") {
+    // "pageshow" evita bloquear play() em alguns iOS quando o load é muito cedo
+    window.addEventListener('pageshow', () => prewarmPermission(), { once:true });
+  }
+}
+
+window.addEventListener('load', init, false);
