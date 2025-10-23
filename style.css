@@ -415,15 +415,25 @@ a { text-decoration: none; color: #2962ff; }
   margin-bottom: 0;
 }
 
+/* 🧩 PATCH — descrição dos cards em 1 linha com reticências */
 .desc {
   color: #202124;
-  white-space: nowrap;
-  text-align: left;
   font-size: 11px;
   font-weight: 400;
   letter-spacing: .2px;
   line-height: 14px;
   margin-bottom: 3px;
+
+  /* 👇 garante 1 linha e adiciona reticências */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  max-width: 100%;
+
+  /* 👇 evita quebra ou hifenização no Android */
+  word-break: keep-all;
+  hyphens: none;
 }
 
 /* 🧩 PATCH — Correção de tipografia Android */
@@ -443,4 +453,5 @@ input, button, .desc, .title, .D0h3Gf {
   letter-spacing: 0.25px !important;
   word-spacing: 0.5px !important;
 }
+
 
