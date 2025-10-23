@@ -338,3 +338,37 @@ input, button, .desc, .title, .D0h3Gf {
   height: 0px;
 }
 
+/* 🧩 PATCH — restaurar espaçamento correto do topo (menu e imagens) */
+.tAcEof {
+  height: 40px;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+}
+
+.O850f {
+  overflow: hidden;
+  height: 48px;
+  padding-bottom: 8px;
+  position: relative;
+}
+
+.iSZmU {
+  border-radius: 0;
+  box-shadow: 0px 1px 3px 0px rgba(60,64,67,0.08);
+  height: 44px;
+  margin: 0 -3px;
+  overflow-x: scroll;
+  overflow-y: hidden;
+  padding: 4px 3px 8px 7px;
+  position: relative;
+  z-index: 1;
+}
+
+.rQEFy {
+  border-bottom: 2px solid rgb(32,33,36);
+  color: rgb(32,33,36);
+  height: 26px;
+  margin: 0 12px 10px 12px; /* 👈 adiciona espaço extra abaixo */
+  padding: 0;
+}
+
