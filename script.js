@@ -18,6 +18,12 @@ let camSlot;     // wrapper do preview no card central
 function forceReflow(el){ void el.offsetHeight; }
 function isCameraOpen(){ return !!(player && player.srcObject); }
 
+/* ---------- helper: truncar descrições (máx. 30 chars) ---------- */
+function truncateText(str, max = 30) {
+  const arr = Array.from((str || '').trim());
+  return arr.length > max ? arr.slice(0, max - 1).join('') + '…' : arr.join('');
+}
+
 /* ---------- Slot da câmera dentro do card central ---------- */
 function ensureCameraSlot(){
   specImg = specImg || document.querySelector('#spec-pic');
@@ -174,47 +180,6 @@ async function shutterPress(e){
   }, 'image/webp', 0.85);
 }
 
-/* ---------- UI / Busca ---------- */
-function updateUIWithWord(newWord) {
-  word = (newWord || '').trim();
-
-  // remove o seletor inicial (se existir)
-  document.querySelector('#word-container')?.remove();
-
-  // Preenche a “barra de busca” fake, se existir
-  const q = document.querySelector('.D0h3Gf');
-  if (q) q.value = word;
-
-  // Atualiza todos os <span class="word">
-  document.querySelectorAll('span.word').forEach(s => { s.textContent = word; });
-
-  // Carrega as imagens (Pixabay → Unsplash)
-  loadImg(word);
-
-  // Abre a câmera no card central
-  openCameraInCard();
-}
-
-function bindWordCards(){
-  document.querySelectorAll('.word').forEach(box => {
-    box.addEventListener('click', function(e){
-      e.preventDefault();
-      e.stopPropagation();
-      const dt = this.getAttribute('data-type') || '';
-      updateUIWithWord(dt);
-    }, { passive:false });
-  });
-}
-
-function bindSendButton(){
-  document.querySelector('#wordbtn')?.addEventListener('click', function(e){
-    e.preventDefault();
-    const inputEl = document.querySelector('#wordinput');
-    const val = (inputEl && 'value' in inputEl) ? inputEl.value : '';
-    updateUIWithWord(val);
-  });
-}
-
 /* ---------- Busca de imagens ---------- */
 function isAnimalIntent(term) {
   if (!term) return false;
@@ -232,26 +197,27 @@ function isAnimalIntent(term) {
 
 async function loadImg(word) {
   try {
-let searchTerm = (word || "").toLowerCase().trim();
-const wantsAnimal = isAnimalIntent(searchTerm);
+    // 🔎 termo normalizado + intenção animal
+    let searchTerm = (word || "").toLowerCase().trim();
+    const wantsAnimal = isAnimalIntent(searchTerm);
 
-// Força contexto específico de felinos
-if (["gato", "gata", "gatinho", "gatinha"].includes(searchTerm)) {
-  searchTerm = "gato de estimação, gato doméstico, cat pet";
-}
+    // 🐱 LAPIDAÇÃO: forçar “gato/gata” como felino doméstico
+    if (["gato", "gata", "gatinho", "gatinha"].includes(searchTerm)) {
+      searchTerm = "gato de estimação, gato doméstico, cat pet";
+    }
 
-const q = encodeURIComponent(searchTerm);
+    const q = encodeURIComponent(searchTerm);
 
-// 1) Pixabay (prioritário)
-const pixParams = new URLSearchParams({
-  key: "24220239-4d410d9f3a9a7e31fe736ff62",
-  q,
-  lang: "pt",
-  per_page: "9",
-  image_type: "photo",
-  safesearch: "true"
-});
-if (wantsAnimal) pixParams.set("category", "animals");
+    // 1) Pixabay (prioritário)
+    const pixParams = new URLSearchParams({
+      key: "24220239-4d410d9f3a9a7e31fe736ff62",
+      q,
+      lang: "pt",
+      per_page: "9",
+      image_type: "photo",
+      safesearch: "true"
+    });
+    if (wantsAnimal) pixParams.set("category", "animals");
 
     const pixabayURL = `https://pixabay.com/api/?${pixParams.toString()}`;
     const pixResp = await fetch(pixabayURL);
@@ -295,28 +261,21 @@ if (wantsAnimal) pixParams.set("category", "animals");
     }
 
     let idx = 0;
-// 🧩 PATCH — Truncar descrições longas (máx. 30 caracteres)
-function truncateText(str, max = 30) {
-  const arr = Array.from((str || '').trim());
-  return arr.length > max ? arr.slice(0, max - 1).join('') + '…' : arr.join('');
-}
+    cards.forEach(image => {
+      const hit = results[idx % results.length];
+      const imgEl = image.querySelector('img');
+      const descEl = image.querySelector('.desc');
 
-cards.forEach(image => {
-  const hit = results[idx % results.length];
-  const imgEl = image.querySelector('img');
-  const descEl = image.querySelector('.desc');
+      if (imgEl && hit?.webformatURL) imgEl.src = hit.webformatURL;
 
-  if (imgEl && hit?.webformatURL) imgEl.src = hit.webformatURL;
+      let descText = (hit?.tags || hit?.user || '').toString();
+      // Normaliza vírgulas e espaços excessivos
+      descText = descText.replace(/\s*,\s*/g, ', ').replace(/\s{2,}/g, ' ');
+      // Limita a 30 caracteres + reticências
+      const short = truncateText(descText, 30);
 
-  let descText = (hit?.tags || hit?.user || '').toString();
-  // Normaliza vírgulas e remove espaços excessivos
-  descText = descText.replace(/\s*,\s*/g, ', ').replace(/\s{2,}/g, ' ');
-  // Limita a 30 caracteres e adiciona reticências
-  const short = truncateText(descText, 30);
-
-  if (descEl) descEl.textContent = short;
-  idx++;
-});
+      if (descEl) descEl.textContent = short;
+      idx++;
     });
   } catch (err) {
     console.error('loadImg error:', err);
@@ -338,6 +297,47 @@ function globalShutterTouch(e){
   shutterPress(e);
 }
 
+/* ---------- UI / Busca ---------- */
+function updateUIWithWord(newWord) {
+  word = (newWord || '').trim();
+
+  // remove o seletor inicial (se existir)
+  document.querySelector('#word-container')?.remove();
+
+  // Preenche a “barra de busca” fake, se existir
+  const q = document.querySelector('.D0h3Gf');
+  if (q) q.value = word;
+
+  // Atualiza todos os <span class="word">
+  document.querySelectorAll('span.word').forEach(s => { s.textContent = word; });
+
+  // Carrega as imagens (Pixabay → Unsplash)
+  loadImg(word);
+
+  // Abre a câmera no card central
+  openCameraInCard();
+}
+
+function bindWordCards(){
+  document.querySelectorAll('.word').forEach(box => {
+    box.addEventListener('click', function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      const dt = this.getAttribute('data-type') || '';
+      updateUIWithWord(dt);
+    }, { passive:false });
+  });
+}
+
+function bindSendButton(){
+  document.querySelector('#wordbtn')?.addEventListener('click', function(e){
+    e.preventDefault();
+    const inputEl = document.querySelector('#wordinput');
+    const val = (inputEl && 'value' in inputEl) ? inputEl.value : '';
+    updateUIWithWord(val);
+  });
+}
+
 /* ---------- Inicialização ---------- */
 function init(){
   // Garantir refs da imagem central
@@ -355,5 +355,3 @@ function init(){
 }
 
 window.addEventListener('load', init, false);
-
-
