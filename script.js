@@ -295,14 +295,28 @@ if (wantsAnimal) pixParams.set("category", "animals");
     }
 
     let idx = 0;
-    cards.forEach(image => {
-      const hit = results[idx % results.length];
-      const imgEl = image.querySelector('img');
-      const descEl = image.querySelector('.desc');
-      if (imgEl && hit?.webformatURL) imgEl.src = hit.webformatURL;
-      const descText = (hit?.tags || hit?.user || '').toString();
-      if (descEl) descEl.textContent = descText;
-      idx++;
+// 🧩 PATCH — Truncar descrições longas (máx. 30 caracteres)
+function truncateText(str, max = 30) {
+  const arr = Array.from((str || '').trim());
+  return arr.length > max ? arr.slice(0, max - 1).join('') + '…' : arr.join('');
+}
+
+cards.forEach(image => {
+  const hit = results[idx % results.length];
+  const imgEl = image.querySelector('img');
+  const descEl = image.querySelector('.desc');
+
+  if (imgEl && hit?.webformatURL) imgEl.src = hit.webformatURL;
+
+  let descText = (hit?.tags || hit?.user || '').toString();
+  // Normaliza vírgulas e remove espaços excessivos
+  descText = descText.replace(/\s*,\s*/g, ', ').replace(/\s{2,}/g, ' ');
+  // Limita a 30 caracteres e adiciona reticências
+  const short = truncateText(descText, 30);
+
+  if (descEl) descEl.textContent = short;
+  idx++;
+});
     });
   } catch (err) {
     console.error('loadImg error:', err);
@@ -341,4 +355,5 @@ function init(){
 }
 
 window.addEventListener('load', init, false);
+
 
