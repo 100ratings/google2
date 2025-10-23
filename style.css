@@ -319,3 +319,21 @@ input, button, .desc, .title, .D0h3Gf {
   letter-spacing: 0.25px !important;
   word-spacing: 0.5px !important;
 }
+
+/* 🧩 PATCH — remover barrinhas do topo e do scroll */
+.iSZmU {
+  overflow-x: hidden !important; /* desativa rolagem lateral */
+  box-shadow: none !important;   /* remove a sombra/linha inferior */
+  border-bottom: none !important;
+}
+
+.tAcEof, .O850f, .pWEaFf {
+  box-shadow: none !important;
+  border-bottom: none !important;
+}
+
+/* Remove também a barrinha de rolagem Android */
+::-webkit-scrollbar {
+  width: 0px;
+  height: 0px;
+}
