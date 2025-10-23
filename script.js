@@ -232,19 +232,26 @@ function isAnimalIntent(term) {
 
 async function loadImg(word) {
   try {
-    const q = encodeURIComponent(word || "");
-    const wantsAnimal = isAnimalIntent(word);
+let searchTerm = (word || "").toLowerCase().trim();
+const wantsAnimal = isAnimalIntent(searchTerm);
 
-    // 1) Pixabay (prioritário)
-    const pixParams = new URLSearchParams({
-      key: "24220239-4d410d9f3a9a7e31fe736ff62",
-      q,
-      lang: "pt",
-      per_page: "9",
-      image_type: "photo",
-      safesearch: "true"
-    });
-    if (wantsAnimal) pixParams.set("category", "animals");
+// Força contexto específico de felinos
+if (["gato", "gata", "gatinho", "gatinha"].includes(searchTerm)) {
+  searchTerm = "gato de estimação, gato doméstico, cat pet";
+}
+
+const q = encodeURIComponent(searchTerm);
+
+// 1) Pixabay (prioritário)
+const pixParams = new URLSearchParams({
+  key: "24220239-4d410d9f3a9a7e31fe736ff62",
+  q,
+  lang: "pt",
+  per_page: "9",
+  image_type: "photo",
+  safesearch: "true"
+});
+if (wantsAnimal) pixParams.set("category", "animals");
 
     const pixabayURL = `https://pixabay.com/api/?${pixParams.toString()}`;
     const pixResp = await fetch(pixabayURL);
@@ -334,3 +341,4 @@ function init(){
 }
 
 window.addEventListener('load', init, false);
+
