@@ -255,7 +255,7 @@ a { text-decoration: none; color: #2962ff; }
 .T47uwc { background-color: #fff; display: inline-block; font-weight: 500; height: 36px; line-height: 27px; white-space: nowrap; }
 .bytUYc { clip: rect(1px,1px,1px,1px); height: 1px; overflow: hidden; position: absolute; width: 1px; z-index: -1000; }
 .NZmxZe { color: rgba(0,0,0,0.54); display: inline-block; padding: 8px 12px; font-size: 14px; font-weight: 500; }
-.rQEFy { border-bottom: 2px solid rgb(32,33,36); color: rgb(32,33,36); height: 26px; margin: 0 12px; }
+.rQEFy { border-bottom: 2px solid rgb(32,33,36); color: rgb(32,33,36); height: 26px; margin: 0 12px 10px 12px; }
 
 /* ==== IMAGE GRID ===== */
 #images {
@@ -337,3 +337,4 @@ input, button, .desc, .title, .D0h3Gf {
   width: 0px;
   height: 0px;
 }
+
