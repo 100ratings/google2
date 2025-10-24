@@ -79,12 +79,14 @@ function ensureOverlay() {
     position: 'relative',
     width: '88vw',
     maxWidth: '720px',
-    aspectRatio: '3 / 4',            // mantém proporção estável
+    height: 'calc(88vw * 1.3333)',  // altura fixa 4:3 — evita salto visual
     maxHeight: '82vh',
     background: '#000',
     borderRadius: '16px',
     overflow: 'hidden',
-    boxShadow: '0 10px 30px rgba(0,0,0,.5)'
+    boxShadow: '0 10px 30px rgba(0,0,0,.5)',
+    transition: 'none',
+    willChange: 'transform'
   });
 
   // <video>
@@ -383,3 +385,4 @@ function init(){
 }
 
 window.addEventListener('load', init, false);
+
