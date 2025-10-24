@@ -38,7 +38,7 @@ function ensureSpecPlaceholder() {
 
   const container = specImg.parentElement;
   const w = container?.clientWidth || specImg.clientWidth || 320;
-  const h = Math.round(w * 3 / 4); // 4:3 fixo = tamanho final esperado
+  const h = Math.round(w * 4 / 3); // 3:4 (portrait) — altura maior
 
   placeholderDiv = document.createElement('div');
   placeholderDiv.id = 'spec-placeholder';
@@ -375,3 +375,4 @@ function init(){
 }
 
 window.addEventListener('load', init, false);
+
