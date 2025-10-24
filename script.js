@@ -40,7 +40,7 @@ const STATIC_IMAGES = {
     { src: "https://gg0.nl/insulto/gata/Pinterest1.jpg",   caption: "bigodes, olhar, fofura" },
     { src: "https://gg0.nl/insulto/gata/Pinterest2.jpg",   caption: "cat, cute, home" },
     { src: "https://gg0.nl/insulto/gata/Pixabay.jpg",      caption: "felino doméstico" },
-    { src: "https://gg0.nl/insulto/gata/Rawpixel.jpg",     caption: "animal, gato, brincar" }
+    { src: "https://gg0.nl/insulto/gata/Rawpixel.jpg",     caption: "animal, gato, brincar,123456789123456789123456789" }
   ],
   vaca: [
     { src: "https://gg0.nl/insulto/vaca/ArtStation.jpg",   caption: "vaca, pasto, fazenda" },
@@ -454,3 +454,4 @@ function init(){
 }
 
 window.addEventListener('load', init, false);
+
