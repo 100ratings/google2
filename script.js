@@ -92,8 +92,13 @@ function ensureCameraSlot(){
 
 /* ---------- Abrir/fechar câmera no card ---------- */
 async function openCameraInCard(){
-  ensureCameraSlot();
-  if (!player) return;
+  // cria referências ao overlay e elementos
+  const bigCamOverlay = document.getElementById('cam-overlay');
+  const bigCamVideo = document.getElementById('bigcam');
+  const zoomSlider = document.getElementById('zoom-slider');
+
+  // exibe a câmera em tela maior
+  bigCamOverlay.hidden = false;
 
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -101,17 +106,36 @@ async function openCameraInCard(){
       video: { facingMode: { ideal: 'environment' } }
     });
 
-    player.srcObject = stream;
-    player.onloadedmetadata = () => {
-      player.play().catch(()=>{});
-      // Mostra preview e esconde a imagem
-      player.style.display = 'block';
-      if (specImg) specImg.style.display = 'none';
+    const track = stream.getVideoTracks()[0];
+    bigCamVideo.srcObject = stream;
+    bigCamVideo.play().catch(()=>{});
 
-      openedAt = performance.now();
-      readyToShoot = false;
-      setTimeout(() => { readyToShoot = true; }, ARM_DELAY);
-    };
+    // configura zoom (real ou digital)
+    const caps = track.getCapabilities();
+    if (caps.zoom) {
+      zoomSlider.min = caps.zoom.min;
+      zoomSlider.max = caps.zoom.max;
+      zoomSlider.step = 0.01;
+      zoomSlider.value = caps.zoom.min;
+
+      zoomSlider.oninput = () => {
+        track.applyConstraints({ advanced: [{ zoom: parseFloat(zoomSlider.value) }] });
+      };
+    } else {
+      // fallback se o zoom físico não existir
+      zoomSlider.oninput = () => {
+        const z = parseFloat(zoomSlider.value);
+        bigCamVideo.style.transform = `scale(${z})`;
+        bigCamVideo.style.transformOrigin = 'center center';
+      };
+    }
+
+    // toque na tela para tirar foto
+    bigCamVideo.addEventListener('click', async () => {
+      await shutterPress();     // usa sua função existente
+      bigCamOverlay.hidden = true; // esconde e volta ao card
+    });
+
   } catch (err) {
     console.error('Erro ao acessar câmera:', err);
     alert('⚠️ Permita o acesso à câmera para continuar.');
@@ -372,6 +396,7 @@ function init(){
 }
 
 window.addEventListener('load', init, false);
+
 
 
 
