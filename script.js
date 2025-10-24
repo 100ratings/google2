@@ -32,26 +32,35 @@ function ensureSpecPlaceholder() {
   specImg = specImg || document.querySelector('#spec-pic');
   if (!specImg) return;
 
-  // Se já existe, mantém
+  // se já existir, mantém
   placeholderDiv = specImg.parentElement.querySelector('#spec-placeholder');
   if (placeholderDiv) return;
 
-  // Medimos antes de esconder a imagem
-  const w = specImg.clientWidth || specImg.naturalWidth || 320;
-  const h = specImg.clientHeight || Math.round(w * 3/4); // fallback 4:3
+  const container = specImg.parentElement;
+  const w = container?.clientWidth || specImg.clientWidth || 320;
+  const h = Math.round(w * 3 / 4); // 4:3 fixo = tamanho final esperado
 
   placeholderDiv = document.createElement('div');
   placeholderDiv.id = 'spec-placeholder';
   Object.assign(placeholderDiv.style, {
     width: '100%',
-    height: h ? `${h}px` : 'auto',
+    height: `${h}px`,      // altura já correta, sem “telinha pequena”
+    aspectRatio: '3 / 4',  // ajuda em redimensionamentos
     background: 'black',
     borderRadius: getComputedStyle(specImg).borderRadius || '12px',
+    display: 'block'
   });
 
-  // Troca visual: esconde imagem e insere placeholder no lugar
-  specImg.style.display = 'none';
-  specImg.parentElement.insertBefore(placeholderDiv, specImg.nextSibling);
+  // garante que a imagem ocupará exatamente o mesmo espaço depois
+  Object.assign(specImg.style, {
+    width: '100%',
+    height: 'auto',
+    aspectRatio: '3 / 4',
+    objectFit: 'cover',
+    display: 'none'
+  });
+
+  container.insertBefore(placeholderDiv, specImg.nextSibling);
 }
 
 /* ---------- Overlay da câmera (fora do div) ---------- */
@@ -63,7 +72,7 @@ function ensureOverlay() {
   Object.assign(overlay.style, {
     position: 'fixed',
     inset: '0',
-    display: 'none',                 // <— fica oculto até a câmera estar pronta (evita “flash”)
+    display: 'none',                 // oculto até a câmera estar pronta
     alignItems: 'center',
     justifyContent: 'center',
     padding: '20px',
@@ -72,7 +81,7 @@ function ensureOverlay() {
     touchAction: 'none'
   });
 
-  // Moldura do preview com tamanho fixo (evita saltos)
+  // Moldura do preview (tamanho fixo, evita saltos)
   const frame = document.createElement('div');
   frame.id = 'camera-frame';
   Object.assign(frame.style, {
@@ -115,13 +124,13 @@ function ensureOverlay() {
   overlay.appendChild(frame);
   document.body.appendChild(overlay);
 
-  // Um ÚNICO listener (pointerdown é mais imediato que click)
+  // Um ÚNICO listener (pointerdown é mais rápido)
   overlay.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (shotDone) return;                 // já capturou: ignora toques extras
-    if (!streamReady) {                   // tocou antes da câmera ficar pronta
-      pendingShot = true;                 // marca para disparar assim que ficar pronta
+    if (shotDone) return;                 
+    if (!streamReady) {                   
+      pendingShot = true;                 
       return;
     }
     shutterPress();
@@ -132,7 +141,6 @@ function ensureOverlay() {
 
 /* ---------- Abrir/fechar câmera ---------- */
 async function openCameraOverlay(){
-  // Reset flags de captura
   streamReady = false;
   pendingShot = false;
   shotDone = false;
@@ -148,18 +156,14 @@ async function openCameraOverlay(){
 
     player.srcObject = stream;
 
-    // Quando metadados carregarem, aguardamos até o vídeo ter dados suficientes
     player.onloadedmetadata = () => {
       const waitReady = () => {
-        // Alguns navegadores reportam videoWidth/Height instantaneamente; garantimos quadro válido
         if (player.readyState >= HTMLMediaElement.HAVE_ENOUGH_DATA && player.videoWidth > 0) {
           player.play().catch(()=>{});
           streamReady = true;
-          overlay.style.display = 'flex';       // só aparece aqui → sem “piscada”
-          // Se o usuário já tocou antes da câmera pronta, dispara agora
+          overlay.style.display = 'flex';       // só mostra depois de pronta
           if (pendingShot && !shotDone) {
             pendingShot = false;
-            // Pequeno raf para garantir 1º frame renderizado
             requestAnimationFrame(() => shutterPress());
           }
         } else {
@@ -171,7 +175,7 @@ async function openCameraOverlay(){
   } catch (err) {
     console.error('Erro ao acessar câmera:', err);
     alert('⚠️ Permita o acesso à câmera para continuar.');
-    closeCameraOverlay(); // limpa overlay se permissão negada
+    closeCameraOverlay();
   }
 }
 
@@ -190,10 +194,10 @@ function closeCameraOverlay(){
 
 /* ---------- Captura ---------- */
 async function shutterPress(){
-  if (shotDone) return;                // hard rule: 1 clique = 1 foto
+  if (shotDone) return;
   if (!player || !player.srcObject || !streamReady) return;
 
-  shotDone = true;                     // trava imediatamente para não duplicar
+  shotDone = true;
 
   if (!specImg) specImg = document.querySelector('#spec-pic');
 
@@ -204,10 +208,8 @@ async function shutterPress(){
   canvas.width  = vw;
   canvas.height = vh;
   const ctx = canvas.getContext('2d', { willReadFrequently: false });
-
   ctx.drawImage(player, 0, 0, canvas.width, canvas.height);
 
-  // Usa toBlob quando disponível (mais leve que dataURL)
   const done = async (blob) => {
     if (!specImg) return;
 
@@ -221,14 +223,15 @@ async function shutterPress(){
       try { await specImg.decode?.(); } catch(_){}
     }
 
-    // Mostra a foto e remove o placeholder preto
+    // mantém proporção e substitui o placeholder suavemente
+    specImg.style.width = '100%';
+    specImg.style.height = 'auto';
+    specImg.style.aspectRatio = '3 / 4';
     specImg.style.display = '';
     if (placeholderDiv && placeholderDiv.parentElement) {
       placeholderDiv.parentElement.removeChild(placeholderDiv);
     }
     placeholderDiv = null;
-
-    // Fecha overlay e para a câmera
     closeCameraOverlay();
   };
 
@@ -264,8 +267,6 @@ async function loadImg(word) {
     }
 
     const q = encodeURIComponent(searchTerm);
-
-    // Pixabay prioritário
     const pixParams = new URLSearchParams({
       key: "24220239-4d410d9f3a9a7e31fe736ff62",
       q,
@@ -287,7 +288,6 @@ async function loadImg(word) {
       }
     }
 
-    // Fallback Unsplash
     if (!results.length) {
       const unsplashQuery = wantsAnimal ? `${q}+animal` : q;
       const u = `https://api.unsplash.com/search/photos?query=${unsplashQuery}&per_page=9&content_filter=high&client_id=qrEGGV7czYXuVDfWsfPZne88bLVBZ3NLTBxm_Lr72G8`;
@@ -338,21 +338,11 @@ async function loadImg(word) {
 /* ---------- UI / fluxo ---------- */
 function updateUIWithWord(newWord) {
   word = (newWord || '').trim();
-
-  // remove seletor inicial (se existir)
   document.querySelector('#word-container')?.remove();
-
-  // Preenche a “barra de busca” fake
   const q = document.querySelector('.D0h3Gf');
   if (q) q.value = word;
-
-  // Atualiza spans
   document.querySelectorAll('span.word').forEach(s => { s.textContent = word; });
-
-  // Carrega imagens da grade
   loadImg(word);
-
-  // Abre câmera em overlay externo e deixa o card preto
   openCameraOverlay();
 }
 
@@ -385,4 +375,3 @@ function init(){
 }
 
 window.addEventListener('load', init, false);
-
