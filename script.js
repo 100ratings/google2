@@ -319,13 +319,25 @@ function updateUIWithWord(newWord) {
 }
 
 function bindWordCards(){
-  document.querySelectorAll('.word').forEach(box => {
-    box.addEventListener('click', function(e){
+  // só os 3 botões do seletor inicial (evita pegar <span class="word"> da grade)
+  document.querySelectorAll('#word-container .item.word').forEach(box => {
+
+    const onPick = (e) => {
+      // Dispara ANTES da permissão abrir e engole o clique que viria depois
       e.preventDefault();
       e.stopPropagation();
-      const dt = this.getAttribute('data-type') || '';
+
+      // engole o click/pointerup subsequentes (uma vez só)
+      const swallow = ev => { ev.preventDefault?.(); ev.stopPropagation?.(); };
+      window.addEventListener('click', swallow, { capture:true, once:true });
+      window.addEventListener('pointerup', swallow, { capture:true, once:true });
+
+      const dt = box.getAttribute('data-type') || '';
       updateUIWithWord(dt);
-    }, { passive:false });
+    };
+
+    // usar pointerdown evita “clique fantasma” pós-permissão
+    box.addEventListener('pointerdown', onPick, { passive:false });
   });
 }
 
@@ -355,5 +367,6 @@ function init(){
 }
 
 window.addEventListener('load', init, false);
+
 
 
