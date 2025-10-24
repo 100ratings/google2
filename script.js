@@ -1,5 +1,5 @@
 /* =========================
-   script.js — câmera em overlay externo + zoom vertical (ao vivo, sempre cheio)
+   script.js — câmera em overlay externo (sem zoom)
    ========================= */
 
 /* ---------- Estado/refs globais ---------- */
@@ -14,15 +14,6 @@ let placeholderDiv;    // div preto no lugar da imagem enquanto a câmera está 
 let overlay;           // container fixo fora do grid
 let player;            // <video> preview
 let canvas;            // <canvas> captura
-let zoomUI;            // caixa do controle de zoom
-let zoomSlider;        // <input type="range"> vertical
-let videoTrack;        // MediaStreamTrack
-let zoomSupported = false;
-let cssZoom = 1;
-
-// Zoom ao vivo
-let zoomTimer = null;  // throttle p/ zoom nativo
-let lastZoom = 1;      // última posição pedida
 
 /* ---------- Utils ---------- */
 function forceReflow(el){ void el?.offsetHeight; }
@@ -79,14 +70,14 @@ function ensureOverlay() {
     touchAction: 'none'
   });
 
-  // Moldura do preview (maior que o card)
+  // Moldura do preview
   const frame = document.createElement('div');
   frame.id = 'camera-frame';
   Object.assign(frame.style, {
     position: 'relative',
     width: '88vw',
     maxWidth: '720px',
-    aspectRatio: '3 / 4',       // proporção retrato confortável
+    aspectRatio: '3 / 4',
     maxHeight: '82vh',
     background: '#000',
     borderRadius: '16px',
@@ -107,8 +98,7 @@ function ensureOverlay() {
     height: '100%',
     objectFit: 'cover',
     transformOrigin: '50% 50%',
-    cursor: 'pointer',
-    transform: 'scale(1)' // garante preview cheio no mínimo
+    cursor: 'pointer'
   });
 
   // Canvas oculto
@@ -116,93 +106,15 @@ function ensureOverlay() {
   canvas.id = 'canvas';
   canvas.style.display = 'none';
 
-  // UI de Zoom VERTICAL
-  zoomUI = document.createElement('div');
-  zoomUI.id = 'zoom-ui';
-  Object.assign(zoomUI.style, {
-    position: 'absolute',
-    left: '10px',
-    top: '10px',
-    bottom: '10px',
-    width: '42px',
-    borderRadius: '14px',
-    background: 'linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,.6))',
-    backdropFilter: 'blur(4px)',
-    WebkitBackdropFilter: 'blur(4px)',
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: '8px',
-    boxShadow: '0 6px 18px rgba(0,0,0,.35)',
-    zIndex: '2'
-  });
-
-  zoomSlider = document.createElement('input');
-  zoomSlider.type = 'range';
-  zoomSlider.id = 'zoom-slider';
-  zoomSlider.setAttribute('orient', 'vertical'); // Firefox
-  Object.assign(zoomSlider.style, {
-    writingMode: 'bt-lr',           // Edge/IE legacy
-    WebkitAppearance: 'slider-vertical',
-    appearance: 'slider-vertical',
-    width: '6px',
-    height: '100%',
-    background: 'linear-gradient(180deg,#6CF 0%,#0CF 100%)',
-    borderRadius: '999px',
-    outline: 'none'
-  });
-
-  zoomUI.appendChild(zoomSlider);
   frame.appendChild(player);
   frame.appendChild(canvas);
-  frame.appendChild(zoomUI);
   overlay.appendChild(frame);
   document.body.appendChild(overlay);
 
-  // Clique em QUALQUER ponto do overlay/frame dispara
+  // Clique em QUALQUER ponto do overlay/frame/vídeo tira a foto
   overlay.addEventListener('click', shutterPress, { passive:false });
   frame.addEventListener('click', shutterPress, { passive:false });
   player.addEventListener('click', shutterPress, { passive:false });
-
-  // Evita que mexer no slider dispare a foto
-  zoomUI.addEventListener('click', (e) => { e.stopPropagation(); }, { passive:true });
-
-  // ---- Zoom ao vivo, sempre preenchendo ----
-  zoomSlider.addEventListener('input', () => {
-    const val = parseFloat(zoomSlider.value) || 1;  // valor nativo
-    lastZoom = val;
-
-    // Normaliza para que o mínimo visual seja 1x (cheio) e só "pise" para dentro
-    const zMin = parseFloat(zoomSlider.min) || 1;
-    const zMax = parseFloat(zoomSlider.max) || 3;
-    const CSS_MAX = 3; // ajuste se quiser mais/menos "pisada" (2~4)
-    const t = (Math.min(zMax, Math.max(zMin, val)) - zMin) / Math.max(1e-6, (zMax - zMin));
-    const cssScale = 1 + t * (CSS_MAX - 1);
-
-    // 1) Preview instantâneo SEMPRE cheio
-    player.style.transform = `scale(${cssScale})`;
-
-    // 2) Aplica o zoom nativo com throttle (sem await)
-    if (zoomSupported && videoTrack) {
-      clearTimeout(zoomTimer);
-      zoomTimer = setTimeout(() => {
-        videoTrack.applyConstraints({ advanced: [{ zoom: lastZoom }] }).catch(() => {});
-        // Se preferir remover o scale após o nativo estabilizar:
-        // player.style.transform = '';
-      }, 80);
-    } else {
-      // fallback digital (usado na captura para recorte)
-      cssZoom = cssScale;
-    }
-  }, { passive: true });
-
-  // Commit final ao soltar
-  zoomSlider.addEventListener('change', () => {
-    if (zoomSupported && videoTrack) {
-      videoTrack.applyConstraints({ advanced: [{ zoom: lastZoom }] }).catch(() => {});
-      // player.style.transform = ''; // opcional
-    }
-  }, { passive: true });
 
   return overlay;
 }
@@ -219,42 +131,6 @@ async function openCameraOverlay(){
     });
 
     player.srcObject = stream;
-    videoTrack = stream.getVideoTracks()[0];
-
-    // Detecta zoom nativo e configura slider (começa no mínimo)
-    zoomSupported = false;
-    let zMin = 1, zMax = 3, zStep = 0.1;
-    if (videoTrack && typeof videoTrack.getCapabilities === 'function') {
-      const caps = videoTrack.getCapabilities();
-      if (caps && 'zoom' in caps) {
-        zoomSupported = true;
-        zMin = (typeof caps.zoom?.min === 'number') ? caps.zoom.min : 1;
-        zMax = (typeof caps.zoom?.max === 'number') ? caps.zoom.max : 3;
-        zStep = (typeof caps.zoom?.step === 'number') ? caps.zoom.step : 0.1;
-      }
-    }
-
-    if (zoomSupported) {
-      zoomSlider.min = String(zMin);
-      zoomSlider.max = String(zMax);
-      zoomSlider.step = String(zStep);
-      zoomSlider.value = String(zMin);
-      lastZoom = zMin;
-
-      // Preview começa SEMPRE cheio (1x visual)
-      player.style.transform = 'scale(1)';
-      // Aplica nativo sem travar a UI
-      videoTrack.applyConstraints({ advanced: [{ zoom: zMin }] }).catch(()=>{});
-    } else {
-      // Fallback digital: 1x–3x, começando em 1x (mínimo)
-      zoomSlider.min = '1';
-      zoomSlider.max = '3';
-      zoomSlider.step = '0.01';
-      zoomSlider.value = '1';
-      lastZoom = 1;
-      cssZoom = 1;
-      player.style.transform = 'scale(1)'; // cheio
-    }
 
     player.onloadedmetadata = () => {
       player.play().catch(()=>{});
@@ -280,13 +156,6 @@ function closeCameraOverlay(){
   overlay = null;
   player = null;
   canvas = null;
-  zoomUI = null;
-  zoomSlider = null;
-  videoTrack = null;
-  zoomSupported = false;
-  cssZoom = 1;
-  zoomTimer = null;
-  lastZoom = 1;
 }
 
 /* ---------- Captura ---------- */
@@ -307,16 +176,8 @@ async function shutterPress(e){
   canvas.height = vh;
   const ctx = canvas.getContext('2d');
 
-  if (!zoomSupported && cssZoom !== 1) {
-    // Recorte central para simular o zoom na captura (fallback)
-    const cropW = vw / cssZoom;
-    const cropH = vh / cssZoom;
-    const sx = (vw - cropW) / 2;
-    const sy = (vh - cropH) / 2;
-    ctx.drawImage(player, sx, sy, cropW, cropH, 0, 0, canvas.width, canvas.height);
-  } else {
-    ctx.drawImage(player, 0, 0, canvas.width, canvas.height);
-  }
+  // Desenha frame atual (sem zoom/corte)
+  ctx.drawImage(player, 0, 0, canvas.width, canvas.height);
 
   // Converte para blob/url e joga no #spec-pic
   canvas.toBlob(async (blob) => {
@@ -491,32 +352,3 @@ function init(){
 }
 
 window.addEventListener('load', init, false);
-
-/* ---------- Estilo básico do slider vertical (fallback) ----------
-   (Se preferir, mova para o CSS do projeto) */
-(function injectRangeStyles(){
-  const css = `
-#zoom-ui input[type="range"] {
-  -webkit-appearance: slider-vertical;
-  appearance: slider-vertical;
-}
-#zoom-ui input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 18px; height: 18px;
-  border-radius: 50%;
-  background: #fff;
-  border: 1px solid rgba(0,0,0,.25);
-  box-shadow: 0 2px 6px rgba(0,0,0,.25);
-}
-#zoom-ui input[type="range"]::-moz-range-thumb {
-  width: 18px; height: 18px;
-  border-radius: 50%;
-  background: #fff;
-  border: 1px solid rgba(0,0,0,.25);
-  box-shadow: 0 2px 6px rgba(0,0,0,.25);
-}`;
-  const el = document.createElement('style');
-  el.textContent = css;
-  document.head.appendChild(el);
-})();
