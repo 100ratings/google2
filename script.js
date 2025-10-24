@@ -17,41 +17,49 @@ let streamReady = false;
 let pendingShot = false;   // toque antes da câmera pronta → captura assim que ficar pronta
 let shotDone = false;      // garante clique único
 
-// --- Imagens locais por palavra (usa SEMPRE isto; não chama API) ---
+/* ---------- Imagens locais com legendas personalizadas ---------- */
+// Use { src, caption }. Se alguma entrada for string, vira {src, caption:""} via helper.
 const STATIC_IMAGES = {
   veado: [
-    "https://gg0.nl/insulto/veado/ArtStation.jpg",
-    "https://gg0.nl/insulto/veado/DevianArt.jpg",
-    "https://gg0.nl/insulto/veado/Freepik1.jpg",
-    "https://gg0.nl/insulto/veado/Freepik2.jpg",
-    "https://gg0.nl/insulto/veado/Pexels.jpg",
-    "https://gg0.nl/insulto/veado/Pinterest1.jpg",
-    "https://gg0.nl/insulto/veado/Pinterest2.jpg",
-    "https://gg0.nl/insulto/veado/Pixabay.jpg",
-    "https://gg0.nl/insulto/veado/Rawpixel.jpg"
+    { src: "https://gg0.nl/insulto/veado/ArtStation.jpg",  caption: "veado, cervo, chifre, natureza" },
+    { src: "https://gg0.nl/insulto/veado/DevianArt.jpg",   caption: "cervo na floresta, fauna" },
+    { src: "https://gg0.nl/insulto/veado/Freepik1.jpg",    caption: "animal silvestre, cervídeo" },
+    { src: "https://gg0.nl/insulto/veado/Freepik2.jpg",    caption: "vida selvagem, natureza" },
+    { src: "https://gg0.nl/insulto/veado/Pexels.jpg",      caption: "cervo em campo aberto" },
+    { src: "https://gg0.nl/insulto/veado/Pinterest1.jpg",  caption: "floresta, aurora, cervo" },
+    { src: "https://gg0.nl/insulto/veado/Pinterest2.jpg",  caption: "mamífero, bosque" },
+    { src: "https://gg0.nl/insulto/veado/Pixabay.jpg",     caption: "animal, natureza, cervo" },
+    { src: "https://gg0.nl/insulto/veado/Rawpixel.jpg",    caption: "reino animal, cervo" }
   ],
   gata: [
-    "https://gg0.nl/insulto/gata/ArtStation.jpg",
-    "https://gg0.nl/insulto/gata/DevianArt.jpg",
-    "https://gg0.nl/insulto/gata/Freepik1.jpg",
-    "https://gg0.nl/insulto/gata/Freepik2.jpg",
-    "https://gg0.nl/insulto/gata/Pexels.jpg",
-    "https://gg0.nl/insulto/gata/Pinterest1.jpg",
-    "https://gg0.nl/insulto/gata/Pinterest2.jpg",
-    "https://gg0.nl/insulto/gata/Pixabay.jpg",
-    "https://gg0.nl/insulto/gata/Rawpixel.jpg"
+    { src: "https://gg0.nl/insulto/gata/ArtStation.jpg",   caption: "gata, felino, doméstico" },
+    { src: "https://gg0.nl/insulto/gata/DevianArt.jpg",    caption: "felina, pelagem, olhos" },
+    { src: "https://gg0.nl/insulto/gata/Freepik1.jpg",     caption: "gato de estimação" },
+    { src: "https://gg0.nl/insulto/gata/Freepik2.jpg",     caption: "miado, felino, pet" },
+    { src: "https://gg0.nl/insulto/gata/Pexels.jpg",       caption: "gatinha, sofá, casa" },
+    { src: "https://gg0.nl/insulto/gata/Pinterest1.jpg",   caption: "bigodes, olhar, fofura" },
+    { src: "https://gg0.nl/insulto/gata/Pinterest2.jpg",   caption: "cat, cute, home" },
+    { src: "https://gg0.nl/insulto/gata/Pixabay.jpg",      caption: "felino doméstico" },
+    { src: "https://gg0.nl/insulto/gata/Rawpixel.jpg",     caption: "animal, gato, brincar" }
   ],
   vaca: [
-    "https://gg0.nl/insulto/vaca/ArtStation.jpg",
-    "https://gg0.nl/insulto/vaca/DevianArt.jpg",
-    "https://gg0.nl/insulto/vaca/Freepik1.jpg",
-    "https://gg0.nl/insulto/vaca/Freepik2.jpg",
-    "https://gg0.nl/insulto/vaca/Pexels.jpg",
-    "https://gg0.nl/insulto/vaca/Pinterest1.jpg",
-    "https://gg0.nl/insulto/vaca/Pinterest2.jpg",
-    "https://gg0.nl/insulto/vaca/Pixabay.jpg",
-    "https://gg0.nl/insulto/vaca/Rawpixel.jpg"
+    { src: "https://gg0.nl/insulto/vaca/ArtStation.jpg",   caption: "vaca, pasto, fazenda" },
+    { src: "https://gg0.nl/insulto/vaca/DevianArt.jpg",    caption: "gado, bovino, campo" },
+    { src: "https://gg0.nl/insulto/vaca/Freepik1.jpg",     caption: "leite, rural, animal" },
+    { src: "https://gg0.nl/insulto/vaca/Freepik2.jpg",     caption: "boi, rebanho, natureza" },
+    { src: "https://gg0.nl/insulto/vaca/Pexels.jpg",       caption: "fazenda, capim, sol" },
+    { src: "https://gg0.nl/insulto/vaca/Pinterest1.jpg",   caption: "bovino, pastagem" },
+    { src: "https://gg0.nl/insulto/vaca/Pinterest2.jpg",   caption: "gado leiteiro" },
+    { src: "https://gg0.nl/insulto/vaca/Pixabay.jpg",      caption: "vaca, animal de fazenda" },
+    { src: "https://gg0.nl/insulto/vaca/Rawpixel.jpg",     caption: "rural, campo, bovino" }
   ]
+};
+
+/* Fallback de tags por palavra (se algum item não tiver caption) */
+const DEFAULT_STATIC_TAGS = {
+  veado: "veado, cervo, natureza",
+  gata:  "gata, felino, doméstico",
+  vaca:  "vaca, bovino, fazenda"
 };
 
 /* ---------- Utils ---------- */
@@ -62,6 +70,17 @@ function isCameraOpen(){ return !!(player && player.srcObject); }
 function truncateText(str, max = 30) {
   const arr = Array.from((str || '').trim());
   return arr.length > max ? arr.slice(0, max - 1).join('') + '…' : arr.join('');
+}
+
+/* Helpers para itens estáticos */
+function prettyFromFilename(url){
+  const file = (url.split('/').pop() || '').replace(/\.(jpe?g|png|webp)$/i, '');
+  return file.replace(/[_-]+/g, ' ');
+}
+function getStaticItems(word){
+  const list = STATIC_IMAGES[word] || [];
+  // compat: string -> { src, caption: "" }
+  return list.map(item => (typeof item === 'string') ? { src:item, caption:'' } : item);
 }
 
 /* ---------- Placeholder preto no card da foto ---------- */
@@ -298,23 +317,25 @@ async function loadImg(word) {
   try {
     let searchTerm = (word || "").toLowerCase().trim();
 
-    // 1) ATALHO LOCAL: se houver lista estática, preenche os 9 cards e sai (sem API)
-    if (STATIC_IMAGES[searchTerm]?.length) {
-      const urls = STATIC_IMAGES[searchTerm];
+    // 1) ATALHO LOCAL: usa imagens definidas e captions personalizadas
+    const localItems = getStaticItems(searchTerm);
+    if (localItems.length) {
       const cards = document.querySelectorAll('.i'); // 9 cards laterais
-      let idx = 0;
-      cards.forEach(image => {
-        const imgEl = image.querySelector('img');
-        const descEl = image.querySelector('.desc');
-        const url = urls[idx % urls.length];
-        if (imgEl) imgEl.src = url;
-        if (descEl) {
-          const file = (url.split('/').pop() || '').replace(/\.(jpe?g|png|webp)$/i, '');
-          descEl.textContent = file; // exibe só o nome do arquivo
-        }
-        idx++;
+      cards.forEach((card, idx) => {
+        const { src, caption } = localItems[idx % localItems.length];
+        const imgEl  = card.querySelector('img');
+        const descEl = card.querySelector('.desc');
+
+        if (imgEl) imgEl.src = src;
+
+        // Prioridade: caption → fallback por palavra → nome de arquivo "bonitinho"
+        const text = (caption && caption.trim())
+          ? caption.trim()
+          : (DEFAULT_STATIC_TAGS[searchTerm] || prettyFromFilename(src));
+
+        if (descEl) descEl.textContent = truncateText(text, 30);
       });
-      return;
+      return; // não chama API
     }
 
     // 2) (SE não houver local) segue fluxo normal de APIs
