@@ -372,11 +372,12 @@ function init(){
       ensureCameraSlot();
       openCameraInCard().catch(()=>{ /* se negar, não insiste */ });
     };
-    document.addEventListener('pointerdown', oneTapOpen, true); // primeiro toque
+    document.addEventListener('pointerdown', oneTapOpen, { capture:true, once:true });
   });
 }
 
 window.addEventListener('load', init, false);
+
 
 
 
