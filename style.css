@@ -372,5 +372,37 @@ input, button, .desc, .title, .D0h3Gf {
   padding: 0;
 }
 
+/* ===== Overlay de câmera ===== */
+#cam-overlay {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  flex-direction: column;
+}
+
+#cam-overlay video {
+  width: 80%;
+  max-width: 700px;
+  aspect-ratio: 3 / 4;
+  border-radius: 12px;
+  object-fit: cover;
+  background: #000;
+}
+
+#zoom-slider {
+  writing-mode: bt-lr; /* barra vertical */
+  -webkit-appearance: slider-vertical;
+  width: 20px;
+  height: 60%;
+  position: absolute;
+  right: 20px;
+  top: 20%;
+}
+
+
 
 
