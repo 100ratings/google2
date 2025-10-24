@@ -31,17 +31,17 @@ const STATIC_IMAGES = {
     { src: "https://gg0.nl/insulto/veado/Pixabay.jpg",     caption: "animal, natureza, cervo" },
     { src: "https://gg0.nl/insulto/veado/Rawpixel.jpg",    caption: "reino animal, cervo" }
   ],
-  gata: [
-    { src: "https://gg0.nl/insulto/gata/ArtStation.jpg",   caption: "gata, felino, doméstico" },
-    { src: "https://gg0.nl/insulto/gata/DevianArt.jpg",    caption: "felina, pelagem, olhos" },
-    { src: "https://gg0.nl/insulto/gata/Freepik1.jpg",     caption: "gato de estimação" },
-    { src: "https://gg0.nl/insulto/gata/Freepik2.jpg",     caption: "miado, felino, pet" },
-    { src: "https://gg0.nl/insulto/gata/Pexels.jpg",       caption: "gatinha, sofá, casa" },
-    { src: "https://gg0.nl/insulto/gata/Pinterest1.jpg",   caption: "bigodes, olhar, fofura" },
-    { src: "https://gg0.nl/insulto/gata/Pinterest2.jpg",   caption: "cat, cute, home" },
-    { src: "https://gg0.nl/insulto/gata/Pixabay.jpg",      caption: "felino doméstico" },
-    { src: "https://gg0.nl/insulto/gata/Rawpixel.jpg",     caption: "animal, gato, brincar,123456789123456789123456789" }
-  ],
+gata: [
+  { src: "https://gg0.nl/insulto/gata/ArtStation.jpg",   caption: "gata, felina, pet, animal, fofura" },
+  { src: "https://gg0.nl/insulto/gata/DevianArt.jpg",    caption: "gato, felino, brincar, carinho, pet" },
+  { src: "https://gg0.nl/insulto/gata/Freepik1.jpg",     caption: "gatinha, felina, animal, doce, cute" },
+  { src: "https://gg0.nl/insulto/gata/Freepik2.jpg",     caption: "gato, pet, fofura, felino, miado" },
+  { src: "https://gg0.nl/insulto/gata/Pexels.jpg",       caption: "gatinho, animal, amor, carinho, pet" },
+  { src: "https://gg0.nl/insulto/gata/Pinterest1.jpg",   caption: "felina, fofura, gato, pet, brincar" },
+  { src: "https://gg0.nl/insulto/gata/Pinterest2.jpg",   caption: "cat, cute, feline, pet, sweet, love" },
+  { src: "https://gg0.nl/insulto/gata/Pixabay.jpg",      caption: "felino, pet, animal, cute, adorable" },
+  { src: "https://gg0.nl/insulto/gata/Rawpixel.jpg",     caption: "gato, animal, fofura, carinho, pet" }
+],
   vaca: [
     { src: "https://gg0.nl/insulto/vaca/ArtStation.jpg",   caption: "vaca, pasto, fazenda" },
     { src: "https://gg0.nl/insulto/vaca/DevianArt.jpg",    caption: "gado, bovino, campo" },
@@ -454,4 +454,5 @@ function init(){
 }
 
 window.addEventListener('load', init, false);
+
 
