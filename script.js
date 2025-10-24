@@ -284,17 +284,22 @@ async function loadImg(word) {
 }
 
 /* ---------- Clique global para disparo em qualquer lugar ---------- */
+function shouldLetClickThrough(target){
+  return !!(
+    target.closest('#word-container') ||      // seletor inicial
+    target.closest('#wordbtn') ||             // botão OK
+    target.closest('#wordinput')              // campo de texto
+  );
+}
 function globalShutterClick(e){
-  if (!isCameraOpen()) return;     // sem câmera → não intercepta
-  e.preventDefault();
-  e.stopPropagation();
-  shutterPress(e);
+  if (!isCameraOpen()) return;
+  if (shouldLetClickThrough(e.target)) return; // deixa passar
+  e.preventDefault(); e.stopPropagation(); shutterPress(e);
 }
 function globalShutterTouch(e){
   if (!isCameraOpen()) return;
-  e.preventDefault();
-  e.stopPropagation();
-  shutterPress(e);
+  if (shouldLetClickThrough(e.target)) return; // deixa passar
+  e.preventDefault(); e.stopPropagation(); shutterPress(e);
 }
 
 /* ---------- UI / Busca ---------- */
@@ -367,6 +372,7 @@ function init(){
 }
 
 window.addEventListener('load', init, false);
+
 
 
 
