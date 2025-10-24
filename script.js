@@ -20,17 +20,17 @@ let shotDone = false;      // garante clique único
 /* ---------- Imagens locais com legendas personalizadas ---------- */
 // Use { src, caption }. Se alguma entrada for string, vira {src, caption:""} via helper.
 const STATIC_IMAGES = {
-  veado: [
-    { src: "https://gg0.nl/insulto/veado/ArtStation.jpg",  caption: "veado, cervo, chifre, natureza" },
-    { src: "https://gg0.nl/insulto/veado/DevianArt.jpg",   caption: "cervo na floresta, fauna" },
-    { src: "https://gg0.nl/insulto/veado/Freepik1.jpg",    caption: "animal silvestre, cervídeo" },
-    { src: "https://gg0.nl/insulto/veado/Freepik2.jpg",    caption: "vida selvagem, natureza" },
-    { src: "https://gg0.nl/insulto/veado/Pexels.jpg",      caption: "cervo em campo aberto" },
-    { src: "https://gg0.nl/insulto/veado/Pinterest1.jpg",  caption: "floresta, aurora, cervo" },
-    { src: "https://gg0.nl/insulto/veado/Pinterest2.jpg",  caption: "mamífero, bosque" },
-    { src: "https://gg0.nl/insulto/veado/Pixabay.jpg",     caption: "animal, natureza, cervo" },
-    { src: "https://gg0.nl/insulto/veado/Rawpixel.jpg",    caption: "reino animal, cervo" }
-  ],
+veado: [
+  { src: "https://gg0.nl/insulto/veado/ArtStation.jpg",  caption: "veado, cervo, animal, natureza, wild" },
+  { src: "https://gg0.nl/insulto/veado/DevianArt.jpg",   caption: "cervo, animal, pet, sweet, natureza" },
+  { src: "https://gg0.nl/insulto/veado/Freepik1.jpg",    caption: "veado, cervídeo, animal, wild, cute" },
+  { src: "https://gg0.nl/insulto/veado/Freepik2.jpg",    caption: "animal, cervo, natureza, fofura, pet" },
+  { src: "https://gg0.nl/insulto/veado/Pexels.jpg",      caption: "cervo, animal, natural, sweet, calm" },
+  { src: "https://gg0.nl/insulto/veado/Pinterest1.jpg",  caption: "veado, fofura, natureza, cervo, wild" },
+  { src: "https://gg0.nl/insulto/veado/Pinterest2.jpg",  caption: "cervo, wild, cute, natureza, sweet" },
+  { src: "https://gg0.nl/insulto/veado/Pixabay.jpg",     caption: "animal, veado, cervo, wild, nature" },
+  { src: "https://gg0.nl/insulto/veado/Rawpixel.jpg",    caption: "cervo, animal, sweet, wild, calm" }
+],
 gata: [
   { src: "https://gg0.nl/insulto/gata/ArtStation.jpg",   caption: "gata, felina, pet, animal, fofura" },
   { src: "https://gg0.nl/insulto/gata/DevianArt.jpg",    caption: "gato, felino, brincar, carinho, pet" },
@@ -42,17 +42,17 @@ gata: [
   { src: "https://gg0.nl/insulto/gata/Pixabay.jpg",      caption: "felino, pet, animal, cute, adorable" },
   { src: "https://gg0.nl/insulto/gata/Rawpixel.jpg",     caption: "gato, animal, fofura, carinho, pet" }
 ],
-  vaca: [
-    { src: "https://gg0.nl/insulto/vaca/ArtStation.jpg",   caption: "vaca, pasto, fazenda" },
-    { src: "https://gg0.nl/insulto/vaca/DevianArt.jpg",    caption: "gado, bovino, campo" },
-    { src: "https://gg0.nl/insulto/vaca/Freepik1.jpg",     caption: "leite, rural, animal" },
-    { src: "https://gg0.nl/insulto/vaca/Freepik2.jpg",     caption: "boi, rebanho, natureza" },
-    { src: "https://gg0.nl/insulto/vaca/Pexels.jpg",       caption: "fazenda, capim, sol" },
-    { src: "https://gg0.nl/insulto/vaca/Pinterest1.jpg",   caption: "bovino, pastagem" },
-    { src: "https://gg0.nl/insulto/vaca/Pinterest2.jpg",   caption: "gado leiteiro" },
-    { src: "https://gg0.nl/insulto/vaca/Pixabay.jpg",      caption: "vaca, animal de fazenda" },
-    { src: "https://gg0.nl/insulto/vaca/Rawpixel.jpg",     caption: "rural, campo, bovino" }
-  ]
+vaca: [
+  { src: "https://gg0.nl/insulto/vaca/ArtStation.jpg",   caption: "vaca, bovina, animal, pet, fofura" },
+  { src: "https://gg0.nl/insulto/vaca/DevianArt.jpg",    caption: "bovino, doce, animal, cute, gentle" },
+  { src: "https://gg0.nl/insulto/vaca/Freepik1.jpg",     caption: "vaca, gado, animal, calm, sweet" },
+  { src: "https://gg0.nl/insulto/vaca/Freepik2.jpg",     caption: "bovina, pet, animal, wild, love" },
+  { src: "https://gg0.nl/insulto/vaca/Pexels.jpg",       caption: "animal, vaca, gentle, cute, pet" },
+  { src: "https://gg0.nl/insulto/vaca/Pinterest1.jpg",   caption: "vaca, fofura, bovina, sweet, love" },
+  { src: "https://gg0.nl/insulto/vaca/Pinterest2.jpg",   caption: "cow, cute, pet, sweet, gentle" },
+  { src: "https://gg0.nl/insulto/vaca/Pixabay.jpg",      caption: "animal, vaca, pet, bovina, calm" },
+  { src: "https://gg0.nl/insulto/vaca/Rawpixel.jpg",     caption: "vaca, animal, sweet, pet, love" }
+]
 };
 
 /* Fallback de tags por palavra (se algum item não tiver caption) */
@@ -454,5 +454,6 @@ function init(){
 }
 
 window.addEventListener('load', init, false);
+
 
 
