@@ -363,20 +363,27 @@ function init(){
   document.addEventListener('click', globalShutterClick, { capture:true, passive:false });
   document.addEventListener('touchstart', globalShutterTouch, { capture:true, passive:false });
 
-  // ✅ Abrir a câmera assim que o site carrega (pede permissão imediatamente)
-  ensureCameraSlot();
-  openCameraInCard().catch(() => {
-    // 🔁 Fallback: alguns navegadores/iOS pedem gesto do usuário
-    const oneTapOpen = (e) => {
-      document.removeEventListener('pointerdown', oneTapOpen, true);
-      ensureCameraSlot();
-      openCameraInCard().catch(()=>{ /* se negar, não insiste */ });
-    };
-    document.addEventListener('pointerdown', oneTapOpen, { capture:true, once:true });
-  });
+// ✅ Abrir a câmera assim que o site carrega (pede permissão imediatamente)
+ensureCameraSlot();
+openCameraInCard().catch(() => {
+  // 🔁 Fallback: abrir no primeiro toque, mas ENGOLIR esse toque
+  const oneTapOpen = (e) => {
+    // impede que este primeiro toque "clique" em vaca/veado/gata etc.
+    e.preventDefault?.();
+    e.stopPropagation?.();
+
+    ensureCameraSlot();
+    openCameraInCard().catch(()=>{ /* se negar, não insiste */ });
+
+    // remove o listener após usar
+    document.removeEventListener('pointerdown', oneTapOpen, true);
+  };
+  document.addEventListener('pointerdown', oneTapOpen, true);
+});
 }
 
 window.addEventListener('load', init, false);
+
 
 
 
