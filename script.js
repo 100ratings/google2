@@ -1,69 +1,96 @@
 /* =========================
-   Camera-in-card (portrait) — MAIOR + ZOOM
+   script.js — câmera em overlay externo + zoom vertical
    ========================= */
 
-/* ---------- Estado ---------- */
+/* ---------- Estado/refs globais ---------- */
 let word = "";
-let readyToShoot = false;
 let openedAt = 0;
-const ARM_DELAY = 250; // evita disparo acidental em Android
+const ARM_DELAY = 250;
 
-// Refs dinâmicas
-let player;      // <video> (preview)
-let canvas;      // <canvas> (captura)
-let specImg;     // <img id="spec-pic">
-let camSlot;     // wrapper do preview no card central
-let zoomUI;      // barra de zoom (container)
-let zoomSlider;  // <input type=range>
-let videoTrack;  // MediaStreamTrack (para zoom nativo)
-let zoomSupported = false; // zoom ótico nativo via constraints
-let cssZoom = 1; // fallback de zoom digital
+let specImg;           // <img id="spec-pic">
+let placeholderDiv;    // div preto no lugar da imagem enquanto a câmera está aberta
 
-/* ---------- Util ---------- */
-function forceReflow(el){ void el.offsetHeight; }
+// Câmera em overlay
+let overlay;           // container fixo fora do grid
+let player;            // <video> preview
+let canvas;            // <canvas> captura
+let zoomUI;            // caixa do controle de zoom
+let zoomSlider;        // <input type="range"> vertical
+let videoTrack;        // MediaStreamTrack
+let zoomSupported = false;
+let cssZoom = 1;
+
+/* ---------- Utils ---------- */
+function forceReflow(el){ void el?.offsetHeight; }
 function isCameraOpen(){ return !!(player && player.srcObject); }
 
-/* ---------- helper: truncar descrições (máx. 30 chars) ---------- */
+/* Trunca texto de descrição das imagens */
 function truncateText(str, max = 30) {
   const arr = Array.from((str || '').trim());
   return arr.length > max ? arr.slice(0, max - 1).join('') + '…' : arr.join('');
 }
 
-/* ---------- Criar/garantir slot da câmera (agora MAIOR) ---------- */
-function ensureCameraSlot(){
+/* ---------- Placeholder preto no card da foto ---------- */
+function ensureSpecPlaceholder() {
   specImg = specImg || document.querySelector('#spec-pic');
-  if (!specImg) return null;
+  if (!specImg) return;
 
-  // Reutiliza se já existir
-  camSlot = camSlot || specImg.parentElement.querySelector('#cam-slot');
-  if (camSlot) return camSlot;
+  // Se já existe, mantém
+  placeholderDiv = specImg.parentElement.querySelector('#spec-placeholder');
+  if (placeholderDiv) return;
 
-  // Contêiner maior: 2:3 e limite de altura para caber bem
-  camSlot = document.createElement('div');
-  camSlot.id = 'cam-slot';
-  Object.assign(camSlot.style, {
-    position: 'relative',
+  // Medimos antes de esconder a imagem
+  const w = specImg.clientWidth || specImg.naturalWidth || 320;
+  const h = specImg.clientHeight || Math.round(w * 3/4); // fallback 4:3
+
+  placeholderDiv = document.createElement('div');
+  placeholderDiv.id = 'spec-placeholder';
+  Object.assign(placeholderDiv.style, {
     width: '100%',
-    borderRadius: '12px',
-    overflow: 'hidden',
+    height: h ? `${h}px` : 'auto',
     background: 'black',
-    aspectRatio: '2 / 3',      // <- era 3/4; agora fica um pouco mais alto
-    maxHeight: '72vh'          // <- impede de passar demais da tela
+    borderRadius: getComputedStyle(specImg).borderRadius || '12px',
   });
 
-  // Fallback caso aspect-ratio não seja suportado
-  const fixSize = () => {
-    const w = camSlot.clientWidth;
-    if (w > 0 && getComputedStyle(camSlot).aspectRatio === 'auto') {
-      camSlot.style.height = Math.round(w * 3 / 2) + 'px'; // 2:3 -> h = w*1.5
-    } else {
-      camSlot.style.height = '';
-    }
-  };
-  new ResizeObserver(fixSize).observe(camSlot);
-  setTimeout(fixSize, 0);
+  // Troca visual: esconde imagem e insere placeholder no lugar
+  specImg.style.display = 'none';
+  specImg.parentElement.insertBefore(placeholderDiv, specImg.nextSibling);
+}
 
-  // <video> preview
+/* ---------- Overlay da câmera (fora do div) ---------- */
+function ensureOverlay() {
+  if (overlay) return overlay;
+
+  overlay = document.createElement('div');
+  overlay.id = 'camera-overlay';
+  Object.assign(overlay.style, {
+    position: 'fixed',
+    inset: '0',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '20px',
+    background: 'rgba(0,0,0,.55)',
+    zIndex: '9999',
+    touchAction: 'none'
+  });
+
+  // Moldura do preview (maior que o card)
+  const frame = document.createElement('div');
+  frame.id = 'camera-frame';
+  Object.assign(frame.style, {
+    position: 'relative',
+    width: '88vw',
+    maxWidth: '720px',
+    aspectRatio: '3 / 4',       // proporção retrato confortável
+    maxHeight: '82vh',
+    background: '#000',
+    borderRadius: '16px',
+    overflow: 'hidden',
+    boxShadow: '0 10px 30px rgba(0,0,0,.5)'
+  });
+
+  // <video>
   player = document.createElement('video');
   player.id = 'player';
   player.setAttribute('playsinline', '');
@@ -75,101 +102,99 @@ function ensureCameraSlot(){
     width: '100%',
     height: '100%',
     objectFit: 'cover',
-    background: 'black',
-    display: 'none',
-    transformOrigin: '50% 50%' // para zoom digital suave
+    transformOrigin: '50% 50%',
+    cursor: 'pointer'
   });
 
-  // Canvas para capturar frame
+  // Canvas oculto
   canvas = document.createElement('canvas');
   canvas.id = 'canvas';
   canvas.style.display = 'none';
 
-  // UI de Zoom (overlay na parte de baixo)
+  // UI de Zoom VERTICAL (começa no mínimo)
   zoomUI = document.createElement('div');
   zoomUI.id = 'zoom-ui';
   Object.assign(zoomUI.style, {
     position: 'absolute',
-    left: '12px',
-    right: '12px',
+    left: '10px',
+    top: '10px',
     bottom: '10px',
-    zIndex: '5',
-    display: 'flex',
-    gap: '10px',
-    alignItems: 'center',
-    padding: '10px 12px',
-    borderRadius: '999px',
+    width: '42px',
+    borderRadius: '14px',
     background: 'linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,.6))',
-    backdropFilter: 'blur(3px)',
-    WebkitBackdropFilter: 'blur(3px)',
-    boxShadow: '0 4px 12px rgba(0,0,0,.35)'
+    backdropFilter: 'blur(4px)',
+    WebkitBackdropFilter: 'blur(4px)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: '8px',
+    boxShadow: '0 6px 18px rgba(0,0,0,.35)',
+    zIndex: '2'
   });
-
-  const zoomIcon = document.createElement('span');
-  zoomIcon.textContent = '🔍';
-  zoomIcon.style.fontSize = '16px';
 
   zoomSlider = document.createElement('input');
   zoomSlider.type = 'range';
   zoomSlider.id = 'zoom-slider';
+  zoomSlider.setAttribute('orient', 'vertical'); // Firefox
   Object.assign(zoomSlider.style, {
-    flex: '1',
-    appearance: 'none',
-    WebkitAppearance: 'none',
-    height: '4px',
+    writingMode: 'bt-lr',           // Edge/IE legacy
+    WebkitAppearance: 'slider-vertical',
+    appearance: 'slider-vertical',
+    width: '6px',
+    height: '100%',
+    background: 'linear-gradient(180deg,#6CF 0%,#0CF 100%)',
     borderRadius: '999px',
-    background: 'linear-gradient(90deg,#6CF 0%,#0CF 100%)',
     outline: 'none'
   });
 
-  zoomUI.appendChild(zoomIcon);
   zoomUI.appendChild(zoomSlider);
+  frame.appendChild(player);
+  frame.appendChild(canvas);
+  frame.appendChild(zoomUI);
+  overlay.appendChild(frame);
+  document.body.appendChild(overlay);
 
-  // Inserção no mesmo card (logo após a imagem do “Facebook”)
-  const parent = specImg.parentElement;
-  parent.insertBefore(camSlot, specImg.nextSibling);
-  camSlot.appendChild(player);
-  camSlot.appendChild(canvas);
-  camSlot.appendChild(zoomUI);
-
-  // Clique direto no preview também dispara
+  // Clique em QUALQUER ponto do overlay/frame dispara
+  overlay.addEventListener('click', shutterPress, { passive:false });
+  frame.addEventListener('click', shutterPress, { passive:false });
   player.addEventListener('click', shutterPress, { passive:false });
 
-  // Alteração do zoom
+  // Evita que mexer no slider dispare a foto
+  zoomUI.addEventListener('click', (e) => { e.stopPropagation(); }, { passive:true });
+
+  // Zoom handler
   zoomSlider.addEventListener('input', async () => {
     if (zoomSupported && videoTrack) {
       const val = parseFloat(zoomSlider.value);
       try {
         await videoTrack.applyConstraints({ advanced: [{ zoom: val }] });
-      } catch(_) { /* se falhar, ignora */ }
+      } catch(_) {}
     } else {
       cssZoom = parseFloat(zoomSlider.value) || 1;
       player.style.transform = `scale(${cssZoom})`;
     }
-  }, { passive: true });
+  }, { passive:true });
 
-  return camSlot;
+  return overlay;
 }
 
 /* ---------- Abrir/fechar câmera ---------- */
-async function openCameraInCard(){
-  ensureCameraSlot();
-  if (!player) return;
+async function openCameraOverlay(){
+  ensureSpecPlaceholder();
+  ensureOverlay();
 
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: false,
-      video: {
-        facingMode: { ideal: 'environment' } // traseira
-      }
+      video: { facingMode: { ideal: 'environment' } }
     });
 
     player.srcObject = stream;
-    videoTrack = (stream.getVideoTracks && stream.getVideoTracks()[0]) || null;
+    videoTrack = stream.getVideoTracks()[0];
 
-    // Detecta suporte a zoom nativo
+    // Detecta zoom nativo e configura slider (começa no mínimo)
     zoomSupported = false;
-    let zMin = 1, zMax = 3, zStep = 0.01;
+    let zMin = 1, zMax = 3, zStep = 0.1;
     if (videoTrack && typeof videoTrack.getCapabilities === 'function') {
       const caps = videoTrack.getCapabilities();
       if (caps && 'zoom' in caps) {
@@ -180,123 +205,111 @@ async function openCameraInCard(){
       }
     }
 
-    // Configura o slider
     if (zoomSupported) {
       zoomSlider.min = String(zMin);
       zoomSlider.max = String(zMax);
       zoomSlider.step = String(zStep);
-      zoomSlider.value = String((zMin + zMax) / 2);
-      try { await videoTrack.applyConstraints({ advanced: [{ zoom: parseFloat(zoomSlider.value) }] }); } catch(_){}
-      player.style.transform = ''; // assegura que não há zoom digital residual
+      zoomSlider.value = String(zMin);            // começa no mínimo (PEDIDO)
+      try { await videoTrack.applyConstraints({ advanced: [{ zoom: zMin }] }); } catch(_){}
+      player.style.transform = '';
     } else {
-      // Fallback: zoom digital 1x–3x
+      // Fallback digital: 1x–3x, começando em 1x (mínimo)
       zoomSlider.min = '1';
       zoomSlider.max = '3';
       zoomSlider.step = '0.01';
-      zoomSlider.value = '1.25'; // começa um pouco maior
-      cssZoom = parseFloat(zoomSlider.value);
+      zoomSlider.value = '1';
+      cssZoom = 1;
       player.style.transform = `scale(${cssZoom})`;
     }
 
     player.onloadedmetadata = () => {
       player.play().catch(()=>{});
-      // Mostra preview e esconde a imagem
-      player.style.display = 'block';
-      if (specImg) specImg.style.display = 'none';
-      zoomUI.style.display = '';
-
+      overlay.style.display = 'flex';
       openedAt = performance.now();
-      readyToShoot = false;
-      setTimeout(() => { readyToShoot = true; }, ARM_DELAY);
+      setTimeout(() => {}, ARM_DELAY);
     };
   } catch (err) {
     console.error('Erro ao acessar câmera:', err);
     alert('⚠️ Permita o acesso à câmera para continuar.');
+    closeCameraOverlay(); // limpa overlay se permissão negada
   }
 }
 
-function closeCameraInCard(){
-  if (player && player.srcObject) {
-    try { player.srcObject.getTracks().forEach(t => t.stop()); } catch(e){}
-    player.srcObject = null;
-  }
-  if (player) {
-    player.style.display = 'none';
-    player.style.transform = ''; // limpa zoom digital
-  }
+function closeCameraOverlay(){
+  try {
+    if (player && player.srcObject) {
+      player.srcObject.getTracks().forEach(t => t.stop());
+    }
+  } catch(_) {}
 
-  // Remove o slot para não deixar “quadrado preto”
-  if (camSlot && camSlot.parentElement) camSlot.parentElement.removeChild(camSlot);
-  camSlot = null;
+  if (overlay && overlay.parentElement) overlay.parentElement.removeChild(overlay);
+  overlay = null;
   player = null;
   canvas = null;
-  videoTrack = null;
   zoomUI = null;
   zoomSlider = null;
+  videoTrack = null;
   zoomSupported = false;
   cssZoom = 1;
-
-  // Mostra a foto no MESMO lugar onde estava o preview
-  if (specImg) specImg.style.display = '';
 }
 
-/* ---------- Capturar foto ---------- */
+/* ---------- Captura ---------- */
 async function shutterPress(e){
   if (e) { e.preventDefault?.(); e.stopPropagation?.(); }
 
-  // Anti-ghost: ignora toques muito cedo após abrir a câmera
-  const now = performance.now();
-  if (!readyToShoot || (now - openedAt) < ARM_DELAY) return;
-
   if (!player || !player.srcObject) return;
-  if (!canvas || !specImg) return;
+  if (!specImg) specImg = document.querySelector('#spec-pic');
 
   const vw = player.videoWidth || 640;
   const vh = player.videoHeight || 480;
 
-  // Mantém proporção + leve downscale p/ performance
-  const maxW = 800;
-  const scale = Math.min(1, maxW / vw);
-  canvas.width  = Math.max(1, Math.floor(vw * scale));
-  canvas.height = Math.max(1, Math.floor(vh * scale));
-
+  // Canvas tamanho do vídeo
+  if (!canvas) {
+    canvas = document.createElement('canvas');
+  }
+  canvas.width  = vw;
+  canvas.height = vh;
   const ctx = canvas.getContext('2d');
 
   if (!zoomSupported && cssZoom !== 1) {
-    // Em zoom digital, recorta o centro para simular zoom na captura
+    // Recorte central para simular o zoom na captura
     const cropW = vw / cssZoom;
     const cropH = vh / cssZoom;
     const sx = (vw - cropW) / 2;
     const sy = (vh - cropH) / 2;
     ctx.drawImage(player, sx, sy, cropW, cropH, 0, 0, canvas.width, canvas.height);
   } else {
-    // Zoom nativo já vem do sensor
     ctx.drawImage(player, 0, 0, canvas.width, canvas.height);
   }
 
-  // Blob → ObjectURL (rápido)
+  // Converte para blob/url e joga no #spec-pic
   canvas.toBlob(async (blob) => {
-    if (!blob) {
-      const data = canvas.toDataURL('image/jpeg', 0.9);
-      specImg.src = data;
+    if (!specImg) return;
+
+    if (blob) {
+      const url = URL.createObjectURL(blob);
+      specImg.src = url;
       try { await specImg.decode?.(); } catch(_){}
-      forceReflow(specImg);
-      closeCameraInCard();
-      return;
+      try { URL.revokeObjectURL(url); } catch(_){}
+    } else {
+      // fallback
+      specImg.src = canvas.toDataURL('image/jpeg', 0.9);
+      try { await specImg.decode?.(); } catch(_){}
     }
 
-    const url = URL.createObjectURL(blob);
-    specImg.src = url;
-    try { await specImg.decode?.(); } catch(_){}
-    forceReflow(specImg);
-    try { URL.revokeObjectURL(url); } catch(_){}
+    // Mostra a foto e remove o placeholder preto
+    specImg.style.display = '';
+    if (placeholderDiv && placeholderDiv.parentElement) {
+      placeholderDiv.parentElement.removeChild(placeholderDiv);
+    }
+    placeholderDiv = null;
 
-    // Troca preview → foto e remove o slot
-    closeCameraInCard();
+    // Fecha overlay e para a câmera
+    closeCameraOverlay();
   }, 'image/webp', 0.85);
 }
 
-/* ---------- Busca de imagens ---------- */
+/* ---------- Busca de imagens (mantido) ---------- */
 function isAnimalIntent(term) {
   if (!term) return false;
   const t = term.toLowerCase().trim();
@@ -313,18 +326,16 @@ function isAnimalIntent(term) {
 
 async function loadImg(word) {
   try {
-    // 🔎 termo normalizado + intenção animal
     let searchTerm = (word || "").toLowerCase().trim();
     const wantsAnimal = isAnimalIntent(searchTerm);
 
-    // 🐱 LAPIDAÇÃO: forçar “gato/gata” como felino doméstico
     if (["gato", "gata", "gatinho", "gatinha"].includes(searchTerm)) {
       searchTerm = "gato de estimação, gato doméstico, cat pet";
     }
 
     const q = encodeURIComponent(searchTerm);
 
-    // 1) Pixabay (prioritário)
+    // Pixabay prioritário
     const pixParams = new URLSearchParams({
       key: "24220239-4d410d9f3a9a7e31fe736ff62",
       q,
@@ -335,8 +346,7 @@ async function loadImg(word) {
     });
     if (wantsAnimal) pixParams.set("category", "animals");
 
-    const pixabayURL = `https://pixabay.com/api/?${pixParams.toString()}`;
-    const pixResp = await fetch(pixabayURL);
+    const pixResp = await fetch(`https://pixabay.com/api/?${pixParams.toString()}`);
     let results = [];
     if (pixResp.ok) {
       const data = await pixResp.json();
@@ -347,15 +357,14 @@ async function loadImg(word) {
       }
     }
 
-    // 2) Fallback Unsplash
+    // Fallback Unsplash
     if (!results.length) {
       const unsplashQuery = wantsAnimal ? `${q}+animal` : q;
-      const unsplashURL =
-        `https://api.unsplash.com/search/photos?query=${unsplashQuery}&per_page=9&content_filter=high&client_id=qrEGGV7czYXuVDfWsfPZne88bLVBZ3NLTBxm_Lr72G8`;
-      const unsplashResp = await fetch(unsplashURL);
-      if (unsplashResp.ok) {
-        const unsplashData = await unsplashResp.json();
-        const uResults = Array.isArray(unsplashData.results) ? unsplashData.results : [];
+      const u = `https://api.unsplash.com/search/photos?query=${unsplashQuery}&per_page=9&content_filter=high&client_id=qrEGGV7czYXuVDfWsfPZne88bLVBZ3NLTBxm_Lr72G8`;
+      const us = await fetch(u);
+      if (us.ok) {
+        const d = await us.json();
+        const uResults = Array.isArray(d.results) ? d.results : [];
         results = uResults.map(r => ({
           webformatURL: r?.urls?.small,
           tags: (r?.description || r?.alt_description || "").toString(),
@@ -364,7 +373,6 @@ async function loadImg(word) {
       }
     }
 
-    // Preenche os cards .i com as imagens
     const cards = document.querySelectorAll('.i');
     if (!results.length) {
       cards.forEach(image => {
@@ -397,59 +405,32 @@ async function loadImg(word) {
   }
 }
 
-/* ---------- Clique global para disparo em qualquer lugar ---------- */
-function shouldLetClickThrough(target){
-  return !!(
-    target.closest('#word-container') ||      // seletor inicial
-    target.closest('#wordbtn') ||             // botão OK
-    target.closest('#wordinput') ||           // campo de texto
-    target.closest('#zoom-ui')                // permite mexer no slider
-  );
-}
-function globalShutterClick(e){
-  if (!isCameraOpen()) return;
-  if (shouldLetClickThrough(e.target)) return; // deixa passar
-  e.preventDefault(); e.stopPropagation(); shutterPress(e);
-}
-function globalShutterTouch(e){
-  if (!isCameraOpen()) return;
-  if (shouldLetClickThrough(e.target)) return; // deixa passar
-  e.preventDefault(); e.stopPropagation(); shutterPress(e);
-}
-
-/* ---------- UI / Busca ---------- */
+/* ---------- UI / fluxo ---------- */
 function updateUIWithWord(newWord) {
   word = (newWord || '').trim();
 
-  // remove o seletor inicial (se existir)
+  // remove seletor inicial (se existir)
   document.querySelector('#word-container')?.remove();
 
-  // Preenche a “barra de busca” fake, se existir
+  // Preenche a “barra de busca” fake
   const q = document.querySelector('.D0h3Gf');
   if (q) q.value = word;
 
-  // Atualiza todos os <span class="word">
+  // Atualiza spans
   document.querySelectorAll('span.word').forEach(s => { s.textContent = word; });
 
-  // Carrega as imagens (Pixabay → Unsplash)
+  // Carrega imagens da grade
   loadImg(word);
 
-  // Abre a câmera no card central (maior + zoom)
-  openCameraInCard();
+  // Abre câmera em overlay externo e deixa o card preto
+  openCameraOverlay();
 }
 
 function bindWordCards(){
-  // só os 3 botões do seletor inicial
   document.querySelectorAll('#word-container .item.word').forEach(box => {
     const onPick = (e) => {
       e.preventDefault();
       e.stopPropagation();
-
-      // engole o click/pointerup subsequentes (uma vez só)
-      const swallow = ev => { ev.preventDefault?.(); ev.stopPropagation?.(); };
-      window.addEventListener('click', swallow, { capture:true, once:true });
-      window.addEventListener('pointerup', swallow, { capture:true, once:true });
-
       const dt = box.getAttribute('data-type') || '';
       updateUIWithWord(dt);
     };
@@ -468,15 +449,38 @@ function bindSendButton(){
 
 /* ---------- Inicialização ---------- */
 function init(){
-  // Garantir refs da imagem central
   specImg = document.querySelector('#spec-pic');
-
   bindWordCards();
   bindSendButton();
-
-  // Clique global (captura toque/clique em qualquer lugar da tela falsa)
-  document.addEventListener('click', globalShutterClick, { capture:true, passive:false });
-  document.addEventListener('touchstart', globalShutterTouch, { capture:true, passive:false });
 }
 
 window.addEventListener('load', init, false);
+
+/* ---------- Estilo básico do slider vertical (fallback) ----------
+   (Se preferir, mova para o CSS do projeto) */
+(function injectRangeStyles(){
+  const css = `
+#zoom-ui input[type="range"] {
+  -webkit-appearance: slider-vertical;
+  appearance: slider-vertical;
+}
+#zoom-ui input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,.25);
+  box-shadow: 0 2px 6px rgba(0,0,0,.25);
+}
+#zoom-ui input[type="range"]::-moz-range-thumb {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  border: 1px solid rgba(0,0,0,.25);
+  box-shadow: 0 2px 6px rgba(0,0,0,.25);
+}`;
+  const el = document.createElement('style');
+  el.textContent = css;
+  document.head.appendChild(el);
+})();
