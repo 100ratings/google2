@@ -92,19 +92,62 @@ function ensureCameraSlot(){
 
 /* ---------- Abrir/fechar câmera no card ---------- */
 async function openCameraInCard(){
-  // cria referências ao overlay e elementos
   const bigCamOverlay = document.getElementById('cam-overlay');
-  const bigCamVideo = document.getElementById('bigcam');
-  const zoomSlider = document.getElementById('zoom-slider');
+  const bigCamVideo   = document.getElementById('bigcam');
+  const zoomSlider    = document.getElementById('zoom-slider');
 
-  // exibe a câmera em tela maior
-  bigCamOverlay.hidden = false;
+  // garante oculto até a câmera estar disponível
+  bigCamOverlay.hidden = true;
+  document.body.classList.remove('cam-open');
 
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
       audio: false,
       video: { facingMode: { ideal: 'environment' } }
     });
+
+    const track = stream.getVideoTracks()[0];
+    bigCamVideo.srcObject = stream;
+    await bigCamVideo.play().catch(()=>{});
+
+    // ✅ AGORA sim: mostra o overlay
+    bigCamOverlay.hidden = false;
+    document.body.classList.add('cam-open');
+
+    // ----- ZOOM (PTZ real ou fallback CSS) -----
+    const caps = track.getCapabilities?.() || {};
+    if (caps.zoom) {
+      zoomSlider.min = caps.zoom.min ?? 1;
+      zoomSlider.max = caps.zoom.max ?? 3;
+      zoomSlider.step = 0.01;
+      zoomSlider.value = zoomSlider.min;
+      zoomSlider.oninput = () => {
+        track.applyConstraints({ advanced: [{ zoom: parseFloat(zoomSlider.value) }] }).catch(()=>{});
+      };
+    } else {
+      zoomSlider.min = 1; zoomSlider.max = 3; zoomSlider.step = 0.01; zoomSlider.value = 1;
+      zoomSlider.oninput = () => {
+        const z = parseFloat(zoomSlider.value);
+        bigCamVideo.style.transform = `scale(${z})`;
+        bigCamVideo.style.transformOrigin = '50% 50%';
+      };
+    }
+
+    // toque para fotografar → fecha overlay e devolve ao card
+    bigCamVideo.addEventListener('click', async () => {
+      await shutterPress();
+      bigCamOverlay.hidden = true;
+      document.body.classList.remove('cam-open');
+    }, { passive:false });
+
+  } catch (err) {
+    console.error('Erro ao acessar câmera:', err);
+    alert('⚠️ Permita o acesso à câmera para continuar.');
+    // garante que não fique visível em caso de erro/negação
+    bigCamOverlay.hidden = true;
+    document.body.classList.remove('cam-open');
+  }
+}
 
     const track = stream.getVideoTracks()[0];
     bigCamVideo.srcObject = stream;
@@ -396,6 +439,7 @@ function init(){
 }
 
 window.addEventListener('load', init, false);
+
 
 
 
