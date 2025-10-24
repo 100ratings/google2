@@ -116,12 +116,12 @@ function ensureOverlay() {
   zoomUI.id = 'zoom-ui';
   Object.assign(zoomUI.style, {
     position: 'absolute',
-    left: '10px',
+    right: '10px',
     top: '10px',
     bottom: '10px',
     width: '42px',
     borderRadius: '14px',
-    background: 'linear-gradient(180deg, rgba(0,0,0,.25), rgba(0,0,0,.6))',
+    background: 'linear-gradient(180deg, rgba(0,0,0,.6), rgba(0,0,0,.25))'
     backdropFilter: 'blur(4px)',
     WebkitBackdropFilter: 'blur(4px)',
     display: 'flex',
@@ -484,3 +484,4 @@ window.addEventListener('load', init, false);
   el.textContent = css;
   document.head.appendChild(el);
 })();
+
