@@ -1,5 +1,5 @@
 /* =========================
-   script.js — câmera em overlay externo + zoom vertical
+   script.js — câmera em overlay externo + zoom vertical (ao vivo)
    ========================= */
 
 /* ---------- Estado/refs globais ---------- */
@@ -19,6 +19,10 @@ let zoomSlider;        // <input type="range"> vertical
 let videoTrack;        // MediaStreamTrack
 let zoomSupported = false;
 let cssZoom = 1;
+
+// Zoom ao vivo
+let zoomTimer = null;  // throttle p/ zoom nativo
+let lastZoom = 1;      // última posição pedida
 
 /* ---------- Utils ---------- */
 function forceReflow(el){ void el?.offsetHeight; }
@@ -103,7 +107,8 @@ function ensureOverlay() {
     height: '100%',
     objectFit: 'cover',
     transformOrigin: '50% 50%',
-    cursor: 'pointer'
+    cursor: 'pointer',
+    transform: 'scale(1)' // garante estado inicial
   });
 
   // Canvas oculto
@@ -162,18 +167,35 @@ function ensureOverlay() {
   // Evita que mexer no slider dispare a foto
   zoomUI.addEventListener('click', (e) => { e.stopPropagation(); }, { passive:true });
 
-  // Zoom handler
-  zoomSlider.addEventListener('input', async () => {
+  // ---- Zoom ao vivo ----
+  zoomSlider.addEventListener('input', () => {
+    const val = parseFloat(zoomSlider.value) || 1;
+    lastZoom = val;
+
+    // 1) Preview instantâneo SEMPRE
+    player.style.transform = `scale(${val})`;
+
+    // 2) Se houver zoom nativo, aplica com throttle
     if (zoomSupported && videoTrack) {
-      const val = parseFloat(zoomSlider.value);
-      try {
-        await videoTrack.applyConstraints({ advanced: [{ zoom: val }] });
-      } catch(_) {}
+      clearTimeout(zoomTimer);
+      zoomTimer = setTimeout(() => {
+        videoTrack.applyConstraints({ advanced: [{ zoom: lastZoom }] }).catch(() => {});
+        // Se quiser, limpe o CSS ao final:
+        // player.style.transform = '';
+      }, 80);
     } else {
-      cssZoom = parseFloat(zoomSlider.value) || 1;
-      player.style.transform = `scale(${cssZoom})`;
+      // fallback digital
+      cssZoom = val;
     }
-  }, { passive:true });
+  }, { passive: true });
+
+  // Commit final ao soltar
+  zoomSlider.addEventListener('change', () => {
+    if (zoomSupported && videoTrack) {
+      videoTrack.applyConstraints({ advanced: [{ zoom: lastZoom }] }).catch(() => {});
+      // player.style.transform = ''; // opcional
+    }
+  }, { passive: true });
 
   return overlay;
 }
@@ -209,17 +231,22 @@ async function openCameraOverlay(){
       zoomSlider.min = String(zMin);
       zoomSlider.max = String(zMax);
       zoomSlider.step = String(zStep);
-      zoomSlider.value = String(zMin);            // começa no mínimo (PEDIDO)
-      try { await videoTrack.applyConstraints({ advanced: [{ zoom: zMin }] }); } catch(_){}
-      player.style.transform = '';
+      zoomSlider.value = String(zMin);
+      lastZoom = zMin;
+
+      // Preview inicial já no mínimo
+      player.style.transform = `scale(${zMin})`;
+      // Aplica nativo sem await (não travar UI)
+      videoTrack.applyConstraints({ advanced: [{ zoom: zMin }] }).catch(()=>{});
     } else {
       // Fallback digital: 1x–3x, começando em 1x (mínimo)
       zoomSlider.min = '1';
       zoomSlider.max = '3';
       zoomSlider.step = '0.01';
       zoomSlider.value = '1';
+      lastZoom = 1;
       cssZoom = 1;
-      player.style.transform = `scale(${cssZoom})`;
+      player.style.transform = 'scale(1)';
     }
 
     player.onloadedmetadata = () => {
@@ -251,6 +278,8 @@ function closeCameraOverlay(){
   videoTrack = null;
   zoomSupported = false;
   cssZoom = 1;
+  zoomTimer = null;
+  lastZoom = 1;
 }
 
 /* ---------- Captura ---------- */
