@@ -1,5 +1,5 @@
 /* =========================
-   script.js — câmera em overlay externo + zoom vertical (ao vivo)
+   script.js — câmera em overlay externo + zoom vertical (ao vivo, sempre cheio)
    ========================= */
 
 /* ---------- Estado/refs globais ---------- */
@@ -108,7 +108,7 @@ function ensureOverlay() {
     objectFit: 'cover',
     transformOrigin: '50% 50%',
     cursor: 'pointer',
-    transform: 'scale(1)' // garante estado inicial
+    transform: 'scale(1)' // garante preview cheio no mínimo
   });
 
   // Canvas oculto
@@ -116,7 +116,7 @@ function ensureOverlay() {
   canvas.id = 'canvas';
   canvas.style.display = 'none';
 
-  // UI de Zoom VERTICAL (começa no mínimo)
+  // UI de Zoom VERTICAL
   zoomUI = document.createElement('div');
   zoomUI.id = 'zoom-ui';
   Object.assign(zoomUI.style, {
@@ -167,25 +167,32 @@ function ensureOverlay() {
   // Evita que mexer no slider dispare a foto
   zoomUI.addEventListener('click', (e) => { e.stopPropagation(); }, { passive:true });
 
-  // ---- Zoom ao vivo ----
+  // ---- Zoom ao vivo, sempre preenchendo ----
   zoomSlider.addEventListener('input', () => {
-    const val = parseFloat(zoomSlider.value) || 1;
+    const val = parseFloat(zoomSlider.value) || 1;  // valor nativo
     lastZoom = val;
 
-    // 1) Preview instantâneo SEMPRE
-    player.style.transform = `scale(${val})`;
+    // Normaliza para que o mínimo visual seja 1x (cheio) e só "pise" para dentro
+    const zMin = parseFloat(zoomSlider.min) || 1;
+    const zMax = parseFloat(zoomSlider.max) || 3;
+    const CSS_MAX = 3; // ajuste se quiser mais/menos "pisada" (2~4)
+    const t = (Math.min(zMax, Math.max(zMin, val)) - zMin) / Math.max(1e-6, (zMax - zMin));
+    const cssScale = 1 + t * (CSS_MAX - 1);
 
-    // 2) Se houver zoom nativo, aplica com throttle
+    // 1) Preview instantâneo SEMPRE cheio
+    player.style.transform = `scale(${cssScale})`;
+
+    // 2) Aplica o zoom nativo com throttle (sem await)
     if (zoomSupported && videoTrack) {
       clearTimeout(zoomTimer);
       zoomTimer = setTimeout(() => {
         videoTrack.applyConstraints({ advanced: [{ zoom: lastZoom }] }).catch(() => {});
-        // Se quiser, limpe o CSS ao final:
+        // Se preferir remover o scale após o nativo estabilizar:
         // player.style.transform = '';
       }, 80);
     } else {
-      // fallback digital
-      cssZoom = val;
+      // fallback digital (usado na captura para recorte)
+      cssZoom = cssScale;
     }
   }, { passive: true });
 
@@ -234,9 +241,9 @@ async function openCameraOverlay(){
       zoomSlider.value = String(zMin);
       lastZoom = zMin;
 
-      // Preview inicial já no mínimo
-      player.style.transform = `scale(${zMin})`;
-      // Aplica nativo sem await (não travar UI)
+      // Preview começa SEMPRE cheio (1x visual)
+      player.style.transform = 'scale(1)';
+      // Aplica nativo sem travar a UI
       videoTrack.applyConstraints({ advanced: [{ zoom: zMin }] }).catch(()=>{});
     } else {
       // Fallback digital: 1x–3x, começando em 1x (mínimo)
@@ -246,7 +253,7 @@ async function openCameraOverlay(){
       zoomSlider.value = '1';
       lastZoom = 1;
       cssZoom = 1;
-      player.style.transform = 'scale(1)';
+      player.style.transform = 'scale(1)'; // cheio
     }
 
     player.onloadedmetadata = () => {
@@ -301,7 +308,7 @@ async function shutterPress(e){
   const ctx = canvas.getContext('2d');
 
   if (!zoomSupported && cssZoom !== 1) {
-    // Recorte central para simular o zoom na captura
+    // Recorte central para simular o zoom na captura (fallback)
     const cropW = vw / cssZoom;
     const cropH = vh / cssZoom;
     const sx = (vw - cropW) / 2;
