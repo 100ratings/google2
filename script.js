@@ -284,27 +284,14 @@ async function loadImg(word) {
 }
 
 /* ---------- Clique global para disparo em qualquer lugar ---------- */
-function shouldLetClickThrough(target){
-  // Deixa os cliques passarem se forem na UI de seleção/entrada
-  return !!(
-    target.closest('#word-container') ||
-    target.closest('.word') ||
-    target.closest('#wordbtn') ||
-    target.closest('#wordinput')
-  );
-}
-
 function globalShutterClick(e){
-  if (!isCameraOpen()) return;                 // sem câmera → não intercepta
-  if (shouldLetClickThrough(e.target)) return; // deixa selecionar vaca/veado/gata
+  if (!isCameraOpen()) return;     // sem câmera → não intercepta
   e.preventDefault();
   e.stopPropagation();
   shutterPress(e);
 }
-
 function globalShutterTouch(e){
   if (!isCameraOpen()) return;
-  if (shouldLetClickThrough(e.target)) return; // idem para toque
   e.preventDefault();
   e.stopPropagation();
   shutterPress(e);
@@ -363,30 +350,10 @@ function init(){
   document.addEventListener('click', globalShutterClick, { capture:true, passive:false });
   document.addEventListener('touchstart', globalShutterTouch, { capture:true, passive:false });
 
-// ✅ Abrir a câmera assim que o site carrega (pede permissão imediatamente)
-ensureCameraSlot();
-openCameraInCard().catch(() => {
-  // 🔁 Fallback: abrir no primeiro toque, mas ENGOLIR esse toque
-  const oneTapOpen = (e) => {
-    // impede que este primeiro toque "clique" em vaca/veado/gata etc.
-    e.preventDefault?.();
-    e.stopPropagation?.();
-
-    ensureCameraSlot();
-    openCameraInCard().catch(()=>{ /* se negar, não insiste */ });
-
-    // remove o listener após usar
-    document.removeEventListener('pointerdown', oneTapOpen, true);
-  };
-  document.addEventListener('pointerdown', oneTapOpen, true);
-});
+  // (Opcional) Abrir a câmera ao carregar:
+  // ensureCameraSlot(); openCameraInCard();
 }
 
 window.addEventListener('load', init, false);
-
-
-
-
-
 
 
