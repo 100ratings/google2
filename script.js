@@ -92,13 +92,8 @@ function ensureCameraSlot(){
 
 /* ---------- Abrir/fechar câmera no card ---------- */
 async function openCameraInCard(){
-  const bigCamOverlay = document.getElementById('cam-overlay');
-  const bigCamVideo   = document.getElementById('bigcam');
-  const zoomSlider    = document.getElementById('zoom-slider');
-
-  // garante oculto até a câmera estar disponível
-  bigCamOverlay.hidden = true;
-  document.body.classList.remove('cam-open');
+  ensureCameraSlot();
+  if (!player) return;
 
   try {
     const stream = await navigator.mediaDevices.getUserMedia({
@@ -106,79 +101,17 @@ async function openCameraInCard(){
       video: { facingMode: { ideal: 'environment' } }
     });
 
-    const track = stream.getVideoTracks()[0];
-    bigCamVideo.srcObject = stream;
-    await bigCamVideo.play().catch(()=>{});
+    player.srcObject = stream;
+    player.onloadedmetadata = () => {
+      player.play().catch(()=>{});
+      // Mostra preview e esconde a imagem
+      player.style.display = 'block';
+      if (specImg) specImg.style.display = 'none';
 
-    // ✅ AGORA sim: mostra o overlay
-    bigCamOverlay.hidden = false;
-    document.body.classList.add('cam-open');
-
-    // ----- ZOOM (PTZ real ou fallback CSS) -----
-    const caps = track.getCapabilities?.() || {};
-    if (caps.zoom) {
-      zoomSlider.min = caps.zoom.min ?? 1;
-      zoomSlider.max = caps.zoom.max ?? 3;
-      zoomSlider.step = 0.01;
-      zoomSlider.value = zoomSlider.min;
-      zoomSlider.oninput = () => {
-        track.applyConstraints({ advanced: [{ zoom: parseFloat(zoomSlider.value) }] }).catch(()=>{});
-      };
-    } else {
-      zoomSlider.min = 1; zoomSlider.max = 3; zoomSlider.step = 0.01; zoomSlider.value = 1;
-      zoomSlider.oninput = () => {
-        const z = parseFloat(zoomSlider.value);
-        bigCamVideo.style.transform = `scale(${z})`;
-        bigCamVideo.style.transformOrigin = '50% 50%';
-      };
-    }
-
-    // toque para fotografar → fecha overlay e devolve ao card
-    bigCamVideo.addEventListener('click', async () => {
-      await shutterPress();
-      bigCamOverlay.hidden = true;
-      document.body.classList.remove('cam-open');
-    }, { passive:false });
-
-  } catch (err) {
-    console.error('Erro ao acessar câmera:', err);
-    alert('⚠️ Permita o acesso à câmera para continuar.');
-    // garante que não fique visível em caso de erro/negação
-    bigCamOverlay.hidden = true;
-    document.body.classList.remove('cam-open');
-  }
-}
-
-    const track = stream.getVideoTracks()[0];
-    bigCamVideo.srcObject = stream;
-    bigCamVideo.play().catch(()=>{});
-
-    // configura zoom (real ou digital)
-    const caps = track.getCapabilities();
-    if (caps.zoom) {
-      zoomSlider.min = caps.zoom.min;
-      zoomSlider.max = caps.zoom.max;
-      zoomSlider.step = 0.01;
-      zoomSlider.value = caps.zoom.min;
-
-      zoomSlider.oninput = () => {
-        track.applyConstraints({ advanced: [{ zoom: parseFloat(zoomSlider.value) }] });
-      };
-    } else {
-      // fallback se o zoom físico não existir
-      zoomSlider.oninput = () => {
-        const z = parseFloat(zoomSlider.value);
-        bigCamVideo.style.transform = `scale(${z})`;
-        bigCamVideo.style.transformOrigin = 'center center';
-      };
-    }
-
-    // toque na tela para tirar foto
-    bigCamVideo.addEventListener('click', async () => {
-      await shutterPress();     // usa sua função existente
-      bigCamOverlay.hidden = true; // esconde e volta ao card
-    });
-
+      openedAt = performance.now();
+      readyToShoot = false;
+      setTimeout(() => { readyToShoot = true; }, ARM_DELAY);
+    };
   } catch (err) {
     console.error('Erro ao acessar câmera:', err);
     alert('⚠️ Permita o acesso à câmera para continuar.');
@@ -439,9 +372,6 @@ function init(){
 }
 
 window.addEventListener('load', init, false);
-
-
-
 
 
 
