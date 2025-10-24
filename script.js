@@ -1,14 +1,21 @@
 /* =========================
-   script.js — câmera em overlay externo (sem zoom, clique único)
+   script.js — câmera em overlay externo (sem zoom, clique único, sem flash)
    ========================= */
 
 /* ---------- Estado/refs globais ---------- */
 let word = "";
-let specImg;
-let placeholderDiv;
-let overlay;
-let player;
-let canvas;
+let specImg;           // <img id="spec-pic">
+let placeholderDiv;    // div preto no lugar da imagem enquanto a câmera está aberta
+
+// Câmera em overlay
+let overlay;           // container fixo fora do grid
+let player;            // <video> preview
+let canvas;            // <canvas> captura
+
+// Controle de prontidão/captura
+let streamReady = false;
+let pendingShot = false;   // toque antes da câmera pronta → captura assim que ficar pronta
+let shotDone = false;      // garante clique único
 
 /* ---------- Utils ---------- */
 function forceReflow(el){ void el?.offsetHeight; }
@@ -25,11 +32,13 @@ function ensureSpecPlaceholder() {
   specImg = specImg || document.querySelector('#spec-pic');
   if (!specImg) return;
 
+  // Se já existe, mantém
   placeholderDiv = specImg.parentElement.querySelector('#spec-placeholder');
   if (placeholderDiv) return;
 
+  // Medimos antes de esconder a imagem
   const w = specImg.clientWidth || specImg.naturalWidth || 320;
-  const h = specImg.clientHeight || Math.round(w * 3/4);
+  const h = specImg.clientHeight || Math.round(w * 3/4); // fallback 4:3
 
   placeholderDiv = document.createElement('div');
   placeholderDiv.id = 'spec-placeholder';
@@ -40,6 +49,7 @@ function ensureSpecPlaceholder() {
     borderRadius: getComputedStyle(specImg).borderRadius || '12px',
   });
 
+  // Troca visual: esconde imagem e insere placeholder no lugar
   specImg.style.display = 'none';
   specImg.parentElement.insertBefore(placeholderDiv, specImg.nextSibling);
 }
@@ -53,7 +63,7 @@ function ensureOverlay() {
   Object.assign(overlay.style, {
     position: 'fixed',
     inset: '0',
-    display: 'flex',
+    display: 'none',                 // <— fica oculto até a câmera estar pronta (evita “flash”)
     alignItems: 'center',
     justifyContent: 'center',
     padding: '20px',
@@ -62,13 +72,14 @@ function ensureOverlay() {
     touchAction: 'none'
   });
 
+  // Moldura do preview com tamanho fixo (evita saltos)
   const frame = document.createElement('div');
   frame.id = 'camera-frame';
   Object.assign(frame.style, {
     position: 'relative',
     width: '88vw',
     maxWidth: '720px',
-    aspectRatio: '3 / 4',
+    aspectRatio: '3 / 4',            // mantém proporção estável
     maxHeight: '82vh',
     background: '#000',
     borderRadius: '16px',
@@ -76,6 +87,7 @@ function ensureOverlay() {
     boxShadow: '0 10px 30px rgba(0,0,0,.5)'
   });
 
+  // <video>
   player = document.createElement('video');
   player.id = 'player';
   player.setAttribute('playsinline', '');
@@ -91,6 +103,7 @@ function ensureOverlay() {
     cursor: 'pointer'
   });
 
+  // Canvas oculto
   canvas = document.createElement('canvas');
   canvas.id = 'canvas';
   canvas.style.display = 'none';
@@ -100,16 +113,28 @@ function ensureOverlay() {
   overlay.appendChild(frame);
   document.body.appendChild(overlay);
 
-  // Clique em QUALQUER ponto do overlay/frame/vídeo tira a foto imediatamente
-  overlay.addEventListener('click', shutterPress, { passive:false });
-  frame.addEventListener('click', shutterPress, { passive:false });
-  player.addEventListener('click', shutterPress, { passive:false });
+  // Um ÚNICO listener (pointerdown é mais imediato que click)
+  overlay.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (shotDone) return;                 // já capturou: ignora toques extras
+    if (!streamReady) {                   // tocou antes da câmera ficar pronta
+      pendingShot = true;                 // marca para disparar assim que ficar pronta
+      return;
+    }
+    shutterPress();
+  }, { passive:false });
 
   return overlay;
 }
 
 /* ---------- Abrir/fechar câmera ---------- */
 async function openCameraOverlay(){
+  // Reset flags de captura
+  streamReady = false;
+  pendingShot = false;
+  shotDone = false;
+
   ensureSpecPlaceholder();
   ensureOverlay();
 
@@ -121,14 +146,30 @@ async function openCameraOverlay(){
 
     player.srcObject = stream;
 
+    // Quando metadados carregarem, aguardamos até o vídeo ter dados suficientes
     player.onloadedmetadata = () => {
-      player.play().catch(()=>{});
-      overlay.style.display = 'flex';
+      const waitReady = () => {
+        // Alguns navegadores reportam videoWidth/Height instantaneamente; garantimos quadro válido
+        if (player.readyState >= HTMLMediaElement.HAVE_ENOUGH_DATA && player.videoWidth > 0) {
+          player.play().catch(()=>{});
+          streamReady = true;
+          overlay.style.display = 'flex';       // só aparece aqui → sem “piscada”
+          // Se o usuário já tocou antes da câmera pronta, dispara agora
+          if (pendingShot && !shotDone) {
+            pendingShot = false;
+            // Pequeno raf para garantir 1º frame renderizado
+            requestAnimationFrame(() => shutterPress());
+          }
+        } else {
+          requestAnimationFrame(waitReady);
+        }
+      };
+      waitReady();
     };
   } catch (err) {
     console.error('Erro ao acessar câmera:', err);
     alert('⚠️ Permita o acesso à câmera para continuar.');
-    closeCameraOverlay();
+    closeCameraOverlay(); // limpa overlay se permissão negada
   }
 }
 
@@ -146,11 +187,12 @@ function closeCameraOverlay(){
 }
 
 /* ---------- Captura ---------- */
-async function shutterPress(e){
-  e?.preventDefault?.();
-  e?.stopPropagation?.();
+async function shutterPress(){
+  if (shotDone) return;                // hard rule: 1 clique = 1 foto
+  if (!player || !player.srcObject || !streamReady) return;
 
-  if (!player || !player.srcObject) return;
+  shotDone = true;                     // trava imediatamente para não duplicar
+
   if (!specImg) specImg = document.querySelector('#spec-pic');
 
   const vw = player.videoWidth || 640;
@@ -159,11 +201,12 @@ async function shutterPress(e){
   if (!canvas) canvas = document.createElement('canvas');
   canvas.width  = vw;
   canvas.height = vh;
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', { willReadFrequently: false });
 
   ctx.drawImage(player, 0, 0, canvas.width, canvas.height);
 
-  canvas.toBlob(async (blob) => {
+  // Usa toBlob quando disponível (mais leve que dataURL)
+  const done = async (blob) => {
     if (!specImg) return;
 
     if (blob) {
@@ -176,13 +219,22 @@ async function shutterPress(e){
       try { await specImg.decode?.(); } catch(_){}
     }
 
+    // Mostra a foto e remove o placeholder preto
     specImg.style.display = '';
     if (placeholderDiv && placeholderDiv.parentElement) {
       placeholderDiv.parentElement.removeChild(placeholderDiv);
     }
     placeholderDiv = null;
+
+    // Fecha overlay e para a câmera
     closeCameraOverlay();
-  }, 'image/webp', 0.85);
+  };
+
+  if (canvas.toBlob) {
+    canvas.toBlob((blob) => { done(blob); }, 'image/webp', 0.85);
+  } else {
+    await done(null);
+  }
 }
 
 /* ---------- Busca de imagens (mantido) ---------- */
@@ -211,6 +263,7 @@ async function loadImg(word) {
 
     const q = encodeURIComponent(searchTerm);
 
+    // Pixabay prioritário
     const pixParams = new URLSearchParams({
       key: "24220239-4d410d9f3a9a7e31fe736ff62",
       q,
@@ -232,6 +285,7 @@ async function loadImg(word) {
       }
     }
 
+    // Fallback Unsplash
     if (!results.length) {
       const unsplashQuery = wantsAnimal ? `${q}+animal` : q;
       const u = `https://api.unsplash.com/search/photos?query=${unsplashQuery}&per_page=9&content_filter=high&client_id=qrEGGV7czYXuVDfWsfPZne88bLVBZ3NLTBxm_Lr72G8`;
@@ -282,13 +336,21 @@ async function loadImg(word) {
 /* ---------- UI / fluxo ---------- */
 function updateUIWithWord(newWord) {
   word = (newWord || '').trim();
+
+  // remove seletor inicial (se existir)
   document.querySelector('#word-container')?.remove();
 
+  // Preenche a “barra de busca” fake
   const q = document.querySelector('.D0h3Gf');
   if (q) q.value = word;
+
+  // Atualiza spans
   document.querySelectorAll('span.word').forEach(s => { s.textContent = word; });
 
+  // Carrega imagens da grade
   loadImg(word);
+
+  // Abre câmera em overlay externo e deixa o card preto
   openCameraOverlay();
 }
 
