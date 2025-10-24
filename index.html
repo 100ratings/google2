@@ -9,24 +9,22 @@
   <link href="style.css" rel="stylesheet">
   <title>Google</title>
 </head>
-<body data-autorequest="1">
+<body>
 
-  <!-- Seleção de palavra (tela inicial 2x2) -->
+  <!-- Seleção de palavra -->
   <div id="word-container">
-    <button class="item word" data-type="vaca"><span>vaca</span></button>
-    <button class="item word" data-type="veado"><span>veado</span></button>
-    <button class="item word" data-type="gata"><span>gata</span></button>
-
-    <!-- bloco input + ok, com visual de botão -->
-    <div class="item item-input">
-      <form id="wordform">
-        <input type="text" id="wordinput" placeholder="digite aqui…" inputmode="text" autocomplete="off">
-        <button id="wordbtn" type="submit">Ok</button>
-      </form>
+    <div class="item word" data-type="vaca"><div>vaca</div></div>
+    <div class="item word" data-type="veado"><div>veado</div></div>
+    <div class="item word" data-type="gata"><div>gata</div></div>
+    <div class="item">
+      <div>
+        <input type="text" id="wordinput" />
+        <button id="wordbtn">Ok</button>
+      </div>
     </div>
   </div>
 
-  <!-- Container “Google” -->
+  <!-- Container “Google” falso -->
   <div id="google-container">
     <div class="header">
       <div class="E1HqKb" jsname="DjIsUc">
@@ -49,8 +47,79 @@
       </svg>
     </div>
 
-    <!-- …(resto da página google fake igual)… -->
+    <div jscontroller="rF2xfb" class="LBH5L" data-rps="true" data-enable-searchbox-full-bleed="false" data-searchbox-lens-mobile-enabled="true" data-searchbox-lens-mobile-visible="true" jsaction="blur:cAgRFb;t0o9eb:w3Wsmc;lX6RWd:w3Wsmc;meVFGc:FKUChb;QskZid:vSl4r;DkpM0b:d3sQLd;IQOavd:dFyQEf;Aghsf:AVsnlb;iHd9U:Q7Cnrc;f5hEHe:G0jgYd;vmxUb:j3bJnb;NOg9L:HLgh3;zLdLw:eaGBS;uGoIkd:epUokb;rcuQ6b:npT2md;">
+      <div class="BXNHhe" jsname="zGVn2e">
+        <button jscontroller="j5IZke" class="fqb79e" type="submit" jsname="lQUL7" aria-label="Google Search" jsaction="click:h5M12e;BFpDKe:fGzxk;aSHGed:PZ1R5b;">
+          <div class="ECy52e">
+            <span class="NoilWe" jsname="iYJsMc">
+              <svg focusable="false" viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"></path></svg>
+            </span>
+            <span class="nFZEq" jsname="VVoV"><img data-src="//www.gstatic.com/images/branding/googleg/svg/googleg_standard_clr_24px.svg" alt=""></span>
+          </div>
+        </button>
+        <button jscontroller="KUJjP" class="AH0rqb" type="button" jsname="Cdl0yb" jsaction="click:a4fUwd;LFz94e:Pw1TX;" style="display:none;">
+          <span class="uFUCJe" aria-label="Back to Search Result Page">
+            <span class="vyDMJf-gXhOqb-Bz112c vyDMJf-gXhOqb-hFsbo-a4fUwd-Bz112c ">
+              <svg focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"></path></svg>
+            </span>
+          </span>
+        </button>
+        <div class="BWjQSd">
+          <div jscontroller="D9vhAe" class="AgviVb" jsname="gLFyf" jsaction="focus:dFyQEf; touchstart:GCnufc; blur:jI3wzf;input:d3sQLd;RGHB9:bEZCCf;keypress:.CLIENT">
+            <input class="D0h3Gf" maxlength="2048" id="REsRA" name="q" type="search" autocapitalize="off" autocomplete="off" autocorrect="off" role="combobox" spellcheck="false" tabindex="0" title="Search" value="test" aria-label="Search">
+          </div>
+          <div class="GFAb4d">
+            <div class="PwtgSd">
+              <button jscontroller="wa5kIf" class="P5Zfw" type="button" tabindex="0" aria-label="Clear Search" jsname="RP0xob" jsaction="click:AVsnlb;" style="display:none">
+                <span class="P0kLqd">
+                  <span class="vyDMJf-gXhOqb-Bz112c vyDMJf-gXhOqb-JbbQac-Bz112c ">
+                    <svg focusable="false" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path></svg>
+                  </span>
+                </span>
+              </button>
+              <a role="link" href="https://search.app.goo.gl/?ofl=https%3A%2F%2Flens.google&al=googleapp%3A%2F%2Flens%3Flens_data%3DKBE&apn=com.google.android.googlequicksearchbox&amv=301204913&isi=284815942&ius=googleapp&ibi=com.google.GoogleMobile&link=https%3A%2F%2Fgoo.gl%2Fiosgoogleapp%2Fdefault%3Furl%3Dgoogleapp%253A%252F%252Flens%253Fmin-version%253D180%2526lens_data%253DKBE&ifl=https%3A%2F%2Fapps.apple.com%2Fus%2Fapp%2Fgoogle%2Fid284815942%3Fppid%3D1ac8cc35-d99c-4a1d-b909-321c8968cc74%26pt%3D9008%26mt%3D8%26ct%3D4815459-oo-lens-isb-bar-lens-cam%26UTM_campaign%3Dgoogle_search_mweb&efr=1&ct=4815459-oo-lens-isb-bar-lens-cam&utm_campaign=4815459-oo-lens-isb-bar-lens-cam&utm_source=google_search_mweb&utm_medium=owned&pt=9008&mt=8" jscontroller="VA5I8d" jsname="R5mgy" jslog="135302" aria-label="Search using your camera or photos" jsattrs="tabindex: '0';">
+                <button class="r5jQRd" aria-label="Search using your camera or photos" type="button" tabindex="-1">
+                  <img class="RGYaxe" src="https://fonts.gstatic.com/s/i/productlogos/lens_camera/v1/192px.svg" alt="Camera search">
+                </button>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
 
+      <div jscontroller="booDqd" class="zCyGac" data-enable-searchbox-full-bleed="false" jsname="UUbT9" style="display: none">
+        <ul class="g0eWFc" role="listbox" jsname="aajZCb"></ul>
+      </div>
+
+      <div jscontroller="OlOJBf" class="Xcz4Je gWmMZe" jsname="pIyzdd">
+        <div class="Utnvac" jsname="cHGkWe"></div>
+      </div>
+    </div>
+
+    <div class="jZWadf" data-tn="0">
+      <div class="tAcEof">
+        <div class="O850f">
+          <div class="pWEaFf"></div>
+          <div class="iSZmU">
+            <div class="T47uwc" jscontroller="TZG3Xc">
+              <h1 class="bytUYc">Search Modes</h1>
+              <a class="NZmxZe" href="#">Modo IA</a>
+              <a class="NZmxZe" href="#">Tudo</a>
+              <span class="rQEFy NZmxZe" aria-current="page">Imagens</span>
+              <a class="NZmxZe" href="#">Vídeos</a>
+              <a class="NZmxZe" href="#">Shopping</a>
+              <a class="NZmxZe" href="#">Notícias</a>
+              <a class="NZmxZe" href="#">Maps</a>
+              <a class="NZmxZe" href="#">Mais</a>
+            </div>
+          </div>
+        </div>
+        <div class="PAYrJc"></div>
+      </div>
+      <div class="cj2HCb"></div>
+    </div>
+
+    <!-- Grade de imagens; o card central contém #spec-pic (onde entra o preview/foto) -->
     <div id="images">
       <div class="image i">
         <img src="https://loremflickr.com/640/360" alt="">
@@ -59,30 +128,71 @@
       </div>
 
       <div class="image">
-        <img id="spec-pic" decoding="async" loading="eager" alt="foto capturada"
-             style="display:block; width:100%; border-radius:12px; will-change:contents;">
+        <img
+          id="spec-pic"
+          decoding="async"
+          loading="eager"
+          alt="foto capturada"
+          style="display:block; width:100%; border-radius:12px; will-change:contents;">
         <div class="title">Facebook</div>
         <div class="desc"><span class="word">Logo</span>.jpg</div>
       </div>
 
-      <!-- …cards de exemplo seguem… -->
+      <div class="image i">
+        <img src="https://loremflickr.com/640/360" alt="">
+        <div class="title">Pexels</div>
+        <div class="desc"><span class="word">Logo</span>.jpg - Pexels</div>
+      </div>
+
+      <div class="image i">
+        <img src="https://loremflickr.com/640/360" alt="">
+        <div class="title">ArtStation</div>
+        <div class="desc"><span class="word">Logo</span>-Produto.jpg - ArtStation</div>
+      </div>
+
+      <div class="image i">
+        <img src="https://loremflickr.com/640/360" alt="">
+        <div class="title">DeviantArt</div>
+        <div class="desc"><span class="word">Logo</span>.jpg - DeviantArt</div>
+      </div>
+
+      <div class="image i">
+        <img src="https://loremflickr.com/640/360" alt="">
+        <div class="title">Pixabay</div>
+        <div class="desc"><span class="word">Logo</span>.jpg - Pixabay</div>
+      </div>
+
+      <div class="image i">
+        <img src="https://loremflickr.com/640/360" alt="">
+        <div class="title">Freepik</div>
+        <div class="desc"><span class="word">Logo</span>.jpg - Freepik</div>
+      </div>
+
+      <div class="image i">
+        <img src="https://loremflickr.com/640/360" alt="">
+        <div class="title">Rawpixel</div>
+        <div class="desc"><span class="word">Logo</span>.jpg - Rawpixel</div>
+      </div>
+
+      <div class="image i">
+        <img src="https://loremflickr.com/640/360" alt="">
+        <div class="title">Pinterest</div>
+        <div class="desc"><span class="word">Logo</span>.jpg - Pinterest</div>
+      </div>
+
+      <div class="image i">
+        <img src="https://loremflickr.com/640/360" alt="">
+        <div class="title">Freepik</div>
+        <div class="desc"><span class="word">Logo</span>.jpg - Freepik</div>
+      </div>
     </div>
-  </div>
 
-  <!-- Overlay full-screen da câmera com moldura completa -->
-  <div id="cam-container" aria-hidden="true" style="display:none">
-    <video id="player" playsinline autoplay muted></video>
-    <canvas id="canvas" style="display:none"></canvas>
+  </div><!-- /#google-container -->
 
-    <div class="guides">
-      <!-- cantos -->
-      <i class="g tl"></i><i class="g tr"></i><i class="g bl"></i><i class="g br"></i>
-      <!-- barras moldura -->
-      <i class="bar top"></i>
-      <i class="bar bottom"></i>
-    </div>
-  </div>
-
-  <script src="script.js?4" defer></script>
+  <script src="script.js?3" defer></script>
 </body>
 </html>
+
+
+
+
