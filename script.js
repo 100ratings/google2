@@ -17,6 +17,43 @@ let streamReady = false;
 let pendingShot = false;   // toque antes da câmera pronta → captura assim que ficar pronta
 let shotDone = false;      // garante clique único
 
+// --- Imagens locais por palavra (usa SEMPRE isto; não chama API) ---
+const STATIC_IMAGES = {
+  veado: [
+    "https://gg0.nl/insulto/veado/ArtStation.jpg",
+    "https://gg0.nl/insulto/veado/DevianArt.jpg",
+    "https://gg0.nl/insulto/veado/Freepik1.jpg",
+    "https://gg0.nl/insulto/veado/Freepik2.jpg",
+    "https://gg0.nl/insulto/veado/Pexels.jpg",
+    "https://gg0.nl/insulto/veado/Pinterest1.jpg",
+    "https://gg0.nl/insulto/veado/Pinterest2.jpg",
+    "https://gg0.nl/insulto/veado/Pixabay.jpg",
+    "https://gg0.nl/insulto/veado/Rawpixel.jpg"
+  ],
+  gata: [
+    "https://gg0.nl/insulto/gata/ArtStation.jpg",
+    "https://gg0.nl/insulto/gata/DevianArt.jpg",
+    "https://gg0.nl/insulto/gata/Freepik1.jpg",
+    "https://gg0.nl/insulto/gata/Freepik2.jpg",
+    "https://gg0.nl/insulto/gata/Pexels.jpg",
+    "https://gg0.nl/insulto/gata/Pinterest1.jpg",
+    "https://gg0.nl/insulto/gata/Pinterest2.jpg",
+    "https://gg0.nl/insulto/gata/Pixabay.jpg",
+    "https://gg0.nl/insulto/gata/Rawpixel.jpg"
+  ],
+  vaca: [
+    "https://gg0.nl/insulto/vaca/ArtStation.jpg",
+    "https://gg0.nl/insulto/vaca/DevianArt.jpg",
+    "https://gg0.nl/insulto/vaca/Freepik1.jpg",
+    "https://gg0.nl/insulto/vaca/Freepik2.jpg",
+    "https://gg0.nl/insulto/vaca/Pexels.jpg",
+    "https://gg0.nl/insulto/vaca/Pinterest1.jpg",
+    "https://gg0.nl/insulto/vaca/Pinterest2.jpg",
+    "https://gg0.nl/insulto/vaca/Pixabay.jpg",
+    "https://gg0.nl/insulto/vaca/Rawpixel.jpg"
+  ]
+};
+
 /* ---------- Utils ---------- */
 function forceReflow(el){ void el?.offsetHeight; }
 function isCameraOpen(){ return !!(player && player.srcObject); }
@@ -242,7 +279,7 @@ async function shutterPress(){
   }
 }
 
-/* ---------- Busca de imagens (mantido) ---------- */
+/* ---------- Busca de imagens (mantido + atalho local) ---------- */
 function isAnimalIntent(term) {
   if (!term) return false;
   const t = term.toLowerCase().trim();
@@ -260,6 +297,27 @@ function isAnimalIntent(term) {
 async function loadImg(word) {
   try {
     let searchTerm = (word || "").toLowerCase().trim();
+
+    // 1) ATALHO LOCAL: se houver lista estática, preenche os 9 cards e sai (sem API)
+    if (STATIC_IMAGES[searchTerm]?.length) {
+      const urls = STATIC_IMAGES[searchTerm];
+      const cards = document.querySelectorAll('.i'); // 9 cards laterais
+      let idx = 0;
+      cards.forEach(image => {
+        const imgEl = image.querySelector('img');
+        const descEl = image.querySelector('.desc');
+        const url = urls[idx % urls.length];
+        if (imgEl) imgEl.src = url;
+        if (descEl) {
+          const file = (url.split('/').pop() || '').replace(/\.(jpe?g|png|webp)$/i, '');
+          descEl.textContent = file; // exibe só o nome do arquivo
+        }
+        idx++;
+      });
+      return;
+    }
+
+    // 2) (SE não houver local) segue fluxo normal de APIs
     const wantsAnimal = isAnimalIntent(searchTerm);
 
     if (["gato", "gata", "gatinho", "gatinha"].includes(searchTerm)) {
@@ -375,4 +433,3 @@ function init(){
 }
 
 window.addEventListener('load', init, false);
-
