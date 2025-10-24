@@ -284,14 +284,27 @@ async function loadImg(word) {
 }
 
 /* ---------- Clique global para disparo em qualquer lugar ---------- */
+function shouldLetClickThrough(target){
+  // Deixa os cliques passarem se forem na UI de seleção/entrada
+  return !!(
+    target.closest('#word-container') ||
+    target.closest('.word') ||
+    target.closest('#wordbtn') ||
+    target.closest('#wordinput')
+  );
+}
+
 function globalShutterClick(e){
-  if (!isCameraOpen()) return;     // sem câmera → não intercepta
+  if (!isCameraOpen()) return;                 // sem câmera → não intercepta
+  if (shouldLetClickThrough(e.target)) return; // deixa selecionar vaca/veado/gata
   e.preventDefault();
   e.stopPropagation();
   shutterPress(e);
 }
+
 function globalShutterTouch(e){
   if (!isCameraOpen()) return;
+  if (shouldLetClickThrough(e.target)) return; // idem para toque
   e.preventDefault();
   e.stopPropagation();
   shutterPress(e);
@@ -364,6 +377,7 @@ function init(){
 }
 
 window.addEventListener('load', init, false);
+
 
 
 
