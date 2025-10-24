@@ -350,10 +350,21 @@ function init(){
   document.addEventListener('click', globalShutterClick, { capture:true, passive:false });
   document.addEventListener('touchstart', globalShutterTouch, { capture:true, passive:false });
 
-  // (Opcional) Abrir a câmera ao carregar:
-  // ensureCameraSlot(); openCameraInCard();
+  // ✅ Abrir a câmera assim que o site carrega (pede permissão imediatamente)
+  ensureCameraSlot();
+  openCameraInCard().catch(() => {
+    // 🔁 Fallback: alguns navegadores/iOS pedem gesto do usuário
+    const oneTapOpen = (e) => {
+      document.removeEventListener('pointerdown', oneTapOpen, true);
+      ensureCameraSlot();
+      openCameraInCard().catch(()=>{ /* se negar, não insiste */ });
+    };
+    document.addEventListener('pointerdown', oneTapOpen, true); // primeiro toque
+  });
 }
 
 window.addEventListener('load', init, false);
+
+
 
 
