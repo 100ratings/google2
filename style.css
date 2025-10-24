@@ -21,15 +21,34 @@ table { border-collapse:collapse; border-spacing:0; }
 html, body { overflow-x:hidden; background:#fff; color:#000; }
 
 /* ===== WORD SELECT (tela inicial 2x2) ===== */
-#word-container{
-  position:fixed; inset:0;
-  display:grid;
-  grid-template-columns:repeat(2, 1fr);
-  grid-template-rows:repeat(2, 1fr);
-  gap:16px;
-  padding:16px;
-  z-index:20;
-  background:#fff; /* branco para parecer tela limpa */
+#word-container {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  column-gap: 10px;
+  row-gap: 10px;
+  padding: 20px;
+  background-color: black;
+  align-items: center;
+  justify-items: center;
+}
+
+#word-container .item {
+  background-color: white;
+  border-radius: 12px;
+  border: 1px solid #333;
+  width: 90%;
+  height: 90%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 1.2rem;
 }
 
 #word-container .item{
@@ -119,3 +138,4 @@ body.show-cam #google-container{ pointer-events:none; visibility:hidden; }
 /* Remover sombras/“barrinhas” do topo */
 .iSZmU, .tAcEof, .O850f, .pWEaFf{ box-shadow:none !important; border-bottom:none !important; }
 ::-webkit-scrollbar{ width:0; height:0; }
+
