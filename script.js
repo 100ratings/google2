@@ -317,50 +317,55 @@ async function loadImg(word) {
   try {
     let searchTerm = (word || "").toLowerCase().trim();
 
-// 1) ATALHO LOCAL: usa imagens definidas e captions personalizadas
-const localItems = getStaticItems(searchTerm);
-if (localItems.length) {
-  // Agora inclui TODOS os 10 cards da grade
-  const cards = document.querySelectorAll('#images .image');
+    // 1) ATALHO LOCAL: usa imagens definidas e captions personalizadas
+    const localItems = getStaticItems(searchTerm);
+    if (localItems.length) {
+      // Mapa de "título do card" -> pista para achar no src (normaliza o 'DevianArt' vs 'DeviantArt', etc.)
+      const TITLE_HINT = {
+        pinterest: 'pinterest',
+        pexels: 'pexels',
+        artstation: 'artstation',
+        deviantart: 'devianart',
+        pixabay: 'pixabay',
+        freepik: 'freepik',
+        rawpixel: 'rawpixel',
+        unsplash: 'unsplash',   // não existe no array; cai no fallback sem repetir
+        stocksnap: 'stocksnap'  // idem
+      };
 
-  // Ordem dos títulos atualizada conforme HTML (sem duplicatas)
-  const order = [
-    "Pinterest",
-    "Facebook",
-    "Pexels",
-    "ArtStation",
-    "DeviantArt",
-    "Pixabay",
-    "Freepik",
-    "Rawpixel",
-    "Unsplash",
-    "StockSnap"
-  ];
+      // Seleciona só os 9 cards laterais (.i) e pula o central (Facebook)
+      const cards = document.querySelectorAll('#images .image.i');
 
-  cards.forEach((card, idx) => {
-    const title = card.querySelector('.title')?.textContent?.trim() || "";
-    const match = localItems.find(it =>
-      it.src.toLowerCase().includes(title.toLowerCase())
-    );
-    const item = match || localItems[idx]; // sem repetição (sem "%")
+      const used = new Set(); // garante que não repete imagem
+      cards.forEach((card) => {
+        const title = (card.querySelector('.title')?.textContent || '').trim().toLowerCase();
+        const hint = TITLE_HINT[title] || title;
 
-    if (!item) return; // caso acabe a lista, para o loop
+        // 1) tenta casar pelo hint no src
+        let match = localItems.find(it => !used.has(it.src) && it.src.toLowerCase().includes(hint));
 
-    const imgEl  = card.querySelector('img');
-    const descEl = card.querySelector('.desc');
+        // 2) se não achar (ex.: Unsplash/StockSnap), pega a próxima não usada
+        if (!match) match = localItems.find(it => !used.has(it.src));
 
-    if (imgEl) imgEl.src = item.src;
+        // 3) último recurso: usa o último item (ainda evita vazio)
+        if (!match) match = localItems[localItems.length - 1];
 
-    // Prioridade: caption → fallback → nome limpo
-    const text = (item.caption && item.caption.trim())
-      ? item.caption.trim()
-      : (DEFAULT_STATIC_TAGS[searchTerm] || prettyFromFilename(item.src));
+        used.add(match.src);
 
-    if (descEl) descEl.textContent = truncateText(text, 30);
-  });
+        const imgEl  = card.querySelector('img');
+        const descEl = card.querySelector('.desc');
 
-  return; // não chama API
-}
+        if (imgEl) imgEl.src = match.src;
+
+        // Prioridade: caption → fallback por palavra → nome de arquivo "bonitinho"
+        const text = (match.caption && match.caption.trim())
+          ? match.caption.trim()
+          : (DEFAULT_STATIC_TAGS[searchTerm] || prettyFromFilename(match.src));
+
+        if (descEl) descEl.textContent = truncateText(text, 30);
+      });
+      return; // não chama API
+    }
 
     // 2) (SE não houver local) segue fluxo normal de APIs
     const wantsAnimal = isAnimalIntent(searchTerm);
@@ -376,7 +381,7 @@ if (localItems.length) {
       lang: "pt",
       per_page: "9",
       image_type: "photo",
-      safesearch: "true"
+      safesafety: "true"
     });
     if (wantsAnimal) pixParams.set("category", "animals");
 
@@ -478,7 +483,3 @@ function init(){
 }
 
 window.addEventListener('load', init, false);
-
-
-
-
