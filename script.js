@@ -21,37 +21,37 @@ let shotDone = false;      // garante clique único
 // Use { src, caption }. Se alguma entrada for string, vira {src, caption:""} via helper.
 const STATIC_IMAGES = {
 veado: [
-  { src: "https://gg0.nl/insulto/veado/ArtStation.jpg",  caption: "veado, cervo, animal, natureza, wild" },
-  { src: "https://gg0.nl/insulto/veado/DevianArt.jpg",   caption: "cervo, animal, pet, sweet, natureza" },
-  { src: "https://gg0.nl/insulto/veado/Freepik1.jpg",    caption: "veado, cervídeo, animal, wild, cute" },
-  { src: "https://gg0.nl/insulto/veado/Freepik2.jpg",    caption: "animal, cervo, natureza, fofura, pet" },
-  { src: "https://gg0.nl/insulto/veado/Pexels.jpg",      caption: "cervo, animal, natural, sweet, calm" },
-  { src: "https://gg0.nl/insulto/veado/Pinterest1.jpg",  caption: "veado, fofura, natureza, cervo, wild" },
-  { src: "https://gg0.nl/insulto/veado/Pinterest2.jpg",  caption: "cervo, wild, cute, natureza, sweet" },
-  { src: "https://gg0.nl/insulto/veado/Pixabay.jpg",     caption: "animal, veado, cervo, wild, nature" },
-  { src: "https://gg0.nl/insulto/veado/Rawpixel.jpg",    caption: "cervo, animal, sweet, wild, calm" }
+  { src: "https://gg0.nl/insulto/veado/01.jpg",  caption: "veado, cervo, animal, natureza, wild" },
+  { src: "https://gg0.nl/insulto/veado/02.jpg",   caption: "cervo, animal, pet, sweet, natureza" },
+  { src: "https://gg0.nl/insulto/veado/03.jpg",    caption: "veado, cervídeo, animal, wild, cute" },
+  { src: "https://gg0.nl/insulto/veado/04.jpg",    caption: "animal, cervo, natureza, fofura, pet" },
+  { src: "https://gg0.nl/insulto/veado/05.jpg",      caption: "cervo, animal, natural, sweet, calm" },
+  { src: "https://gg0.nl/insulto/veado/06.jpg",  caption: "veado, fofura, natureza, cervo, wild" },
+  { src: "https://gg0.nl/insulto/veado/07.jpg",  caption: "cervo, wild, cute, natureza, sweet" },
+  { src: "https://gg0.nl/insulto/veado/08.jpg",     caption: "animal, veado, cervo, wild, nature" },
+  { src: "https://gg0.nl/insulto/veado/09.jpg",    caption: "cervo, animal, sweet, wild, calm" }
 ],
 gata: [
-  { src: "https://gg0.nl/insulto/gata/ArtStation.jpg",   caption: "gata, felina, pet, animal, fofura" },
-  { src: "https://gg0.nl/insulto/gata/DevianArt.jpg",    caption: "gato, felino, brincar, carinho, pet" },
-  { src: "https://gg0.nl/insulto/gata/Freepik1.jpg",     caption: "gatinha, felina, animal, doce, cute" },
-  { src: "https://gg0.nl/insulto/gata/Freepik2.jpg",     caption: "gato, pet, fofura, felino, miado" },
-  { src: "https://gg0.nl/insulto/gata/Pexels.jpg",       caption: "gatinho, animal, amor, carinho, pet" },
-  { src: "https://gg0.nl/insulto/gata/Pinterest1.jpg",   caption: "felina, fofura, gato, pet, brincar" },
-  { src: "https://gg0.nl/insulto/gata/Pinterest2.jpg",   caption: "cat, cute, feline, pet, sweet, love" },
-  { src: "https://gg0.nl/insulto/gata/Pixabay.jpg",      caption: "felino, pet, animal, cute, adorable" },
-  { src: "https://gg0.nl/insulto/gata/Rawpixel.jpg",     caption: "gato, animal, fofura, carinho, pet" }
+  { src: "https://gg0.nl/insulto/gata/01.jpg",   caption: "gata, felina, pet, animal, fofura" },
+  { src: "https://gg0.nl/insulto/gata/02.jpg",    caption: "gato, felino, brincar, carinho, pet" },
+  { src: "https://gg0.nl/insulto/gata/03.jpg",     caption: "gatinha, felina, animal, doce, cute" },
+  { src: "https://gg0.nl/insulto/gata/04.jpg",     caption: "gato, pet, fofura, felino, miado" },
+  { src: "https://gg0.nl/insulto/gata/05.jpg",       caption: "gatinho, animal, amor, carinho, pet" },
+  { src: "https://gg0.nl/insulto/gata/06.jpg",   caption: "felina, fofura, gato, pet, brincar" },
+  { src: "https://gg0.nl/insulto/gata/07.jpg",   caption: "cat, cute, feline, pet, sweet, love" },
+  { src: "https://gg0.nl/insulto/gata/08.jpg",      caption: "felino, pet, animal, cute, adorable" },
+  { src: "https://gg0.nl/insulto/gata/09.jpg",     caption: "gato, animal, fofura, carinho, pet" }
 ],
 vaca: [
-  { src: "https://gg0.nl/insulto/vaca/ArtStation.jpg",   caption: "vaca, bovina, animal, pet, fofura" },
-  { src: "https://gg0.nl/insulto/vaca/DevianArt.jpg",    caption: "bovino, doce, animal, cute, gentle" },
-  { src: "https://gg0.nl/insulto/vaca/Freepik1.jpg",     caption: "vaca, gado, animal, calm, sweet" },
-  { src: "https://gg0.nl/insulto/vaca/Freepik2.jpg",     caption: "bovina, pet, animal, wild, love" },
-  { src: "https://gg0.nl/insulto/vaca/Pexels.jpg",       caption: "animal, vaca, gentle, cute, pet" },
-  { src: "https://gg0.nl/insulto/vaca/Pinterest1.jpg",   caption: "vaca, fofura, bovina, sweet, love" },
-  { src: "https://gg0.nl/insulto/vaca/Pinterest2.jpg",   caption: "cow, cute, pet, sweet, gentle" },
-  { src: "https://gg0.nl/insulto/vaca/Pixabay.jpg",      caption: "animal, vaca, pet, bovina, calm" },
-  { src: "https://gg0.nl/insulto/vaca/Rawpixel.jpg",     caption: "vaca, animal, sweet, pet, love" }
+  { src: "https://gg0.nl/insulto/vaca/01.jpg",   caption: "vaca, bovina, animal, pet, fofura" },
+  { src: "https://gg0.nl/insulto/vaca/02.jpg",    caption: "bovino, doce, animal, cute, gentle" },
+  { src: "https://gg0.nl/insulto/vaca/03.jpg",     caption: "vaca, gado, animal, calm, sweet" },
+  { src: "https://gg0.nl/insulto/vaca/04.jpg",     caption: "bovina, pet, animal, wild, love" },
+  { src: "https://gg0.nl/insulto/vaca/05.jpg",       caption: "animal, vaca, gentle, cute, pet" },
+  { src: "https://gg0.nl/insulto/vaca/06.jpg",   caption: "vaca, fofura, bovina, sweet, love" },
+  { src: "https://gg0.nl/insulto/vaca/07.jpg",   caption: "cow, cute, pet, sweet, gentle" },
+  { src: "https://gg0.nl/insulto/vaca/08.jpg",      caption: "animal, vaca, pet, bovina, calm" },
+  { src: "https://gg0.nl/insulto/vaca/09.jpg",     caption: "vaca, animal, sweet, pet, love" }
 ]
 };
 
@@ -483,3 +483,4 @@ function init(){
 }
 
 window.addEventListener('load', init, false);
+
