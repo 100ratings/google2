@@ -319,24 +319,30 @@ async function loadImg(word) {
 
     // 1) ATALHO LOCAL: usa imagens definidas e captions personalizadas
     const localItems = getStaticItems(searchTerm);
-    if (localItems.length) {
-      const cards = document.querySelectorAll('.i'); // 9 cards laterais
-      cards.forEach((card, idx) => {
-        const { src, caption } = localItems[idx % localItems.length];
-        const imgEl  = card.querySelector('img');
-        const descEl = card.querySelector('.desc');
+if (localItems.length) {
+  const cards = document.querySelectorAll('.i');
+  const order = ["Pinterest","Pexels","ArtStation","DeviantArt","Pixabay","Freepik","Rawpixel","Pinterest","Freepik"];
 
-        if (imgEl) imgEl.src = src;
+  cards.forEach((card, idx) => {
+    const title = card.querySelector('.title')?.textContent?.trim();
+    const match = localItems.find(it =>
+      it.src.toLowerCase().includes(title.toLowerCase())
+    );
+    const item = match || localItems[idx % localItems.length];
 
-        // Prioridade: caption → fallback por palavra → nome de arquivo "bonitinho"
-        const text = (caption && caption.trim())
-          ? caption.trim()
-          : (DEFAULT_STATIC_TAGS[searchTerm] || prettyFromFilename(src));
+    const imgEl  = card.querySelector('img');
+    const descEl = card.querySelector('.desc');
 
-        if (descEl) descEl.textContent = truncateText(text, 30);
-      });
-      return; // não chama API
-    }
+    if (imgEl) imgEl.src = item.src;
+
+    const text = (item.caption && item.caption.trim())
+      ? item.caption.trim()
+      : (DEFAULT_STATIC_TAGS[searchTerm] || prettyFromFilename(item.src));
+
+    if (descEl) descEl.textContent = truncateText(text, 30);
+  });
+  return; // não chama API
+}
 
     // 2) (SE não houver local) segue fluxo normal de APIs
     const wantsAnimal = isAnimalIntent(searchTerm);
@@ -454,6 +460,7 @@ function init(){
 }
 
 window.addEventListener('load', init, false);
+
 
 
 
