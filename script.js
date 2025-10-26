@@ -317,26 +317,50 @@ async function loadImg(word) {
   try {
     let searchTerm = (word || "").toLowerCase().trim();
 
-    // 1) ATALHO LOCAL: usa imagens definidas e captions personalizadas
-    const localItems = getStaticItems(searchTerm);
-    if (localItems.length) {
-      const cards = document.querySelectorAll('.i'); // 9 cards laterais
-      cards.forEach((card, idx) => {
-        const { src, caption } = localItems[idx % localItems.length];
-        const imgEl  = card.querySelector('img');
-        const descEl = card.querySelector('.desc');
+// 1) ATALHO LOCAL: usa imagens definidas e captions personalizadas
+const localItems = getStaticItems(searchTerm);
+if (localItems.length) {
+  // Agora inclui TODOS os 10 cards da grade
+  const cards = document.querySelectorAll('#images .image');
 
-        if (imgEl) imgEl.src = src;
+  // Ordem dos títulos atualizada conforme HTML (sem duplicatas)
+  const order = [
+    "Pinterest",
+    "Facebook",
+    "Pexels",
+    "ArtStation",
+    "DeviantArt",
+    "Pixabay",
+    "Freepik",
+    "Rawpixel",
+    "Unsplash",
+    "StockSnap"
+  ];
 
-        // Prioridade: caption → fallback por palavra → nome de arquivo "bonitinho"
-        const text = (caption && caption.trim())
-          ? caption.trim()
-          : (DEFAULT_STATIC_TAGS[searchTerm] || prettyFromFilename(src));
+  cards.forEach((card, idx) => {
+    const title = card.querySelector('.title')?.textContent?.trim() || "";
+    const match = localItems.find(it =>
+      it.src.toLowerCase().includes(title.toLowerCase())
+    );
+    const item = match || localItems[idx]; // sem repetição (sem "%")
 
-        if (descEl) descEl.textContent = truncateText(text, 30);
-      });
-      return; // não chama API
-    }
+    if (!item) return; // caso acabe a lista, para o loop
+
+    const imgEl  = card.querySelector('img');
+    const descEl = card.querySelector('.desc');
+
+    if (imgEl) imgEl.src = item.src;
+
+    // Prioridade: caption → fallback → nome limpo
+    const text = (item.caption && item.caption.trim())
+      ? item.caption.trim()
+      : (DEFAULT_STATIC_TAGS[searchTerm] || prettyFromFilename(item.src));
+
+    if (descEl) descEl.textContent = truncateText(text, 30);
+  });
+
+  return; // não chama API
+}
 
     // 2) (SE não houver local) segue fluxo normal de APIs
     const wantsAnimal = isAnimalIntent(searchTerm);
@@ -454,6 +478,7 @@ function init(){
 }
 
 window.addEventListener('load', init, false);
+
 
 
 
