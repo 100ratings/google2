@@ -520,13 +520,39 @@ function bindSendButton(){
   });
 }
 
+/* ===== GOOGLE: abrir na MESMA aba substituindo histórico (location.replace) ===== */
+function buildGoogleSearchURL(term){
+  const q = (term || '').toString().trim();
+  if (!q) return 'https://www.google.com/';
+  return 'https://www.google.com/search?q=' + encodeURIComponent(q);
+}
+
+/* Abre na MESMA aba e substitui a entrada do histórico */
+function openGoogleReplace(term){
+  const url = buildGoogleSearchURL(term);
+  window.location.replace(url); // back não volta para esta página
+}
+
+/* Faz bind do clique no SVG com id="google-logo" */
+function bindGoogleLogo(){
+  const logo = document.getElementById('google-logo');
+  if (!logo) return;
+  logo.style.cursor = 'pointer';
+  logo.addEventListener('click', (e) => {
+    e.preventDefault();
+    // usa a global 'word' ou o valor do input
+    const inputSearch = document.querySelector('.D0h3Gf') || document.getElementById('wordinput');
+    const current = (window.word && window.word.trim()) || (inputSearch?.value || '').trim();
+    openGoogleReplace(current);
+  }, { passive: true });
+}
+
 /* ---------- Inicialização ---------- */
 function init(){
   specImg = document.querySelector('#spec-pic');
   bindWordCards();
   bindSendButton();
+  bindGoogleLogo();   // <- adicionada: clique no logo envia pro Google (replace)
 }
 
 window.addEventListener('load', init, false);
-
-
