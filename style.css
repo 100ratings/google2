@@ -81,10 +81,15 @@ html {
   display: none;
   background: black;
 }
-body.show-cam #cam-container { display: block; }
-body.show-cam #google-container {
-  pointer-events: none;   /* bloqueia interação, mas continua visível */
-  /* visibility: hidden;  <-- REMOVIDO */
+/* Mostra tudo por trás, mas bloqueia qualquer clique enquanto a câmera estiver aberta */
+body.show-cam > * {
+  pointer-events: none !important;  /* bloqueia tudo */
+}
+
+/* Reabilita interação apenas com a câmera */
+body.show-cam #camera-overlay,
+body.show-cam #cam-container {
+  pointer-events: auto !important;
 }
 
 /* ===== VIDEO ===== */
@@ -397,6 +402,7 @@ input, button, .desc, .title, .D0h3Gf {
   border: 1px solid rgba(0,0,0,.25);
   box-shadow: 0 2px 6px rgba(0,0,0,.25);
 }
+
 
 
 
