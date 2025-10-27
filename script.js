@@ -17,56 +17,79 @@ let streamReady = false;
 let pendingShot = false;   // toque antes da câmera pronta → captura assim que ficar pronta
 let shotDone = false;      // garante clique único
 
+/* ======== KEEP AWAKE (Wake Lock + fallback) ======== */
+let wakeLock = null;
+let keepAliveTimer = null;
+
+async function requestWakeLock() {
+  if ('wakeLock' in navigator) {
+    try {
+      wakeLock = await navigator.wakeLock.request('screen');
+      wakeLock.addEventListener('release', () => { wakeLock = null; });
+    } catch (_) {
+      startKeepAliveFallback();
+    }
+  } else {
+    startKeepAliveFallback();
+  }
+}
+function startKeepAliveFallback(){
+  if (keepAliveTimer) return;
+  keepAliveTimer = setInterval(() => { window.scrollTo(0, 0); }, 25000);
+}
+function stopKeepAwake(){
+  try { wakeLock?.release?.(); } catch(_) {}
+  wakeLock = null;
+  if (keepAliveTimer) { clearInterval(keepAliveTimer); keepAliveTimer = null; }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && !wakeLock) requestWakeLock();
+});
+// reativa no primeiro toque (qualquer área branca)
+document.addEventListener('pointerdown', () => {
+  if (!wakeLock) requestWakeLock();
+}, { passive:true });
+/* ======== /KEEP AWAKE ======== */
+
 /* ---------- Imagens locais com legendas personalizadas ---------- */
 // Use { src, caption }. Se alguma entrada for string, vira {src, caption:""} via helper.
 const STATIC_IMAGES = {
   veado: [
     { src: "https://100ratings.github.io/google2/insulto/veado/01.jpg",  caption: "veado, cervo, animal, natureza, wild" },
-    { src: "https://100ratings.github.io/google2/insulto/veado/02.jpg",   caption: "cervo, animal, pet, sweet, natureza" },
-    { src: "https://100ratings.github.io/google2/insulto/veado/03.jpg",    caption: "veado, cervídeo, animal, wild, cute" },
-    { src: "https://100ratings.github.io/google2/insulto/veado/04.jpg",    caption: "animal, cervo, natureza, fofura, pet" },
-    { src: "https://100ratings.github.io/google2/insulto/veado/05.jpg",      caption: "cervo, animal, natural, sweet, calm" },
+    { src: "https://100ratings.github.io/google2/insulto/veado/02.jpg",  caption: "cervo, animal, pet, sweet, natureza" },
+    { src: "https://100ratings.github.io/google2/insulto/veado/03.jpg",  caption: "veado, cervídeo, animal, wild, cute" },
+    { src: "https://100ratings.github.io/google2/insulto/veado/04.jpg",  caption: "animal, cervo, natureza, fofura, pet" },
+    { src: "https://100ratings.github.io/google2/insulto/veado/05.jpg",  caption: "cervo, animal, natural, sweet, calm" },
     { src: "https://100ratings.github.io/google2/insulto/veado/06.jpg",  caption: "veado, fofura, natureza, cervo, wild" },
     { src: "https://100ratings.github.io/google2/insulto/veado/07.jpg",  caption: "cervo, wild, cute, natureza, sweet" },
-    { src: "https://100ratings.github.io/google2/insulto/veado/08.jpg",     caption: "animal, veado, cervo, wild, nature" },
-    { src: "https://100ratings.github.io/google2/insulto/veado/09.jpg",    caption: "cervo, animal, sweet, wild, calm" }
+    { src: "https://100ratings.github.io/google2/insulto/veado/08.jpg",  caption: "animal, veado, cervo, wild, nature" },
+    { src: "https://100ratings.github.io/google2/insulto/veado/09.jpg",  caption: "cervo, animal, sweet, wild, calm" }
   ],
   gata: [
     { src: "https://100ratings.github.io/google2/insulto/gata/01.jpg",   caption: "gata, felina, pet, animal, fofura" },
-    { src: "https://100ratings.github.io/google2/insulto/gata/02.jpg",    caption: "gato, felino, brincar, carinho, pet" },
-    { src: "https://100ratings.github.io/google2/insulto/gata/03.jpg",     caption: "gatinha, felina, animal, doce, cute" },
-    { src: "https://100ratings.github.io/google2/insulto/gata/04.jpg",     caption: "gato, pet, fofura, felino, miado" },
-    { src: "https://100ratings.github.io/google2/insulto/gata/05.jpg",       caption: "gatinho, animal, amor, carinho, pet" },
-    { src: "https://100ratings.github.io/google2/insulto/gata/06.jpg",   caption: "felina, fofura, gato, pet, brincar" },
-    { src: "https://100ratings.github.io/google2/insulto/gata/07.jpg",   caption: "cat, cute, feline, pet, sweet, love" },
-    { src: "https://100ratings.github.io/google2/insulto/gata/08.jpg",      caption: "felino, pet, animal, cute, adorable" },
-    { src: "https://100ratings.github.io/google2/insulto/gata/09.jpg",     caption: "gato, animal, fofura, carinho, pet" }
+    { src: "https://100ratings.github.io/google2/insulto/gata/02.jpg",   caption: "gato, felino, brincar, carinho, pet" },
+    { src: "https://100ratings.github.io/google2/insulto/gata/03.jpg",   caption: "gatinha, felina, animal, doce, cute" },
+    { src: "https://100ratings.github.io/google2/insulto/gata/04.jpg",   caption: "gato doméstico, pet, casa, cozy" },
+    { src: "https://100ratings.github.io/google2/insulto/gata/05.jpg",   caption: "felino fofo, whiskers, cute" },
+    { src: "https://100ratings.github.io/google2/insulto/gata/06.jpg",   caption: "cat pet, olhos grandes, meigo" },
+    { src: "https://100ratings.github.io/google2/insulto/gata/07.jpg",   caption: "gato de estimação, peludo" },
+    { src: "https://100ratings.github.io/google2/insulto/gata/08.jpg",   caption: "felina, ronronar, carinho" },
+    { src: "https://100ratings.github.io/google2/insulto/gata/09.jpg",   caption: "cat cute, lazy, sofá" }
   ],
   vaca: [
-    { src: "https://100ratings.github.io/google2/insulto/vaca/01.jpg",   caption: "vaca, bovina, animal, pet, fofura" },
-    { src: "https://100ratings.github.io/google2/insulto/vaca/02.jpg",    caption: "bovino, doce, animal, cute, gentle" },
-    { src: "https://100ratings.github.io/google2/insulto/vaca/03.jpg",     caption: "vaca, gado, animal, calm, sweet" },
-    { src: "https://100ratings.github.io/google2/insulto/vaca/04.jpg",     caption: "bovina, pet, animal, wild, love" },
-    { src: "https://100ratings.github.io/google2/insulto/vaca/05.jpg",       caption: "animal, vaca, gentle, cute, pet" },
-    { src: "https://100ratings.github.io/google2/insulto/vaca/06.jpg",   caption: "vaca, fofura, bovina, sweet, love" },
-    { src: "https://100ratings.github.io/google2/insulto/vaca/07.jpg",   caption: "cow, cute, pet, sweet, gentle" },
-    { src: "https://100ratings.github.io/google2/insulto/vaca/08.jpg",      caption: "animal, vaca, pet, bovina, calm" },
-    { src: "https://100ratings.github.io/google2/insulto/vaca/09.jpg",     caption: "vaca, animal, sweet, pet, love" }
+    { src: "https://gg0.nl/insulto/vaca/ArtStation.jpg",   caption: "vaca, pasto, fazenda" },
+    { src: "https://gg0.nl/insulto/vaca/DevianArt.jpg",    caption: "gado, bovino, campo" },
+    { src: "https://gg0.nl/insulto/vaca/Freepik1.jpg",     caption: "leite, rural, animal" },
+    { src: "https://gg0.nl/insulto/vaca/Freepik2.jpg",     caption: "boi, rebanho, natureza" },
+    { src: "https://gg0.nl/insulto/vaca/Pexels.jpg",       caption: "fazenda, capim, sol" },
+    { src: "https://gg0.nl/insulto/vaca/Pinterest1.jpg",   caption: "bovino, pastagem" },
+    { src: "https://gg0.nl/insulto/vaca/Pinterest2.jpg",   caption: "gado leiteiro" },
+    { src: "https://gg0.nl/insulto/vaca/Rawpixel.jpg",     caption: "campo, rural, céu azul" },
+    { src: "https://gg0.nl/insulto/vaca/Freepik3.jpg",     caption: "vaca leiteira, curral" }
   ]
 };
 
-/* Fallback de tags por palavra (se algum item não tiver caption) */
-const DEFAULT_STATIC_TAGS = {
-  veado: "veado, cervo, natureza",
-  gata:  "gata, felino, doméstico",
-  vaca:  "vaca, bovino, fazenda"
-};
-
 /* ---------- Utils ---------- */
-function forceReflow(el){ void el?.offsetHeight; }
-function isCameraOpen(){ return !!(player && player.srcObject); }
-
-/* Trunca texto de descrição das imagens */
 function truncateText(str, max = 30) {
   const arr = Array.from((str || '').trim());
   return arr.length > max ? arr.slice(0, max - 1).join('') + '…' : arr.join('');
@@ -79,7 +102,6 @@ function prettyFromFilename(url){
 }
 function getStaticItems(word){
   const list = STATIC_IMAGES[word] || [];
-  // compat: string -> { src, caption: "" }
   return list.map(item => (typeof item === 'string') ? { src:item, caption:'' } : item);
 }
 
@@ -88,11 +110,11 @@ const IMG_CACHE = new Map();
 function warmCategory(cat, limit = 3) {
   const list = getStaticItems(cat).slice(0, limit);
   list.forEach(({ src }) => {
-    if (IMG_CACHE.has(src)) return;    // já aquecida
+    if (IMG_CACHE.has(src)) return;
     const im = new Image();
     im.decoding = 'async';
     im.loading  = 'eager';
-    im.src = src;                      // dispara download em background
+    im.src = src;
     IMG_CACHE.set(src, im);
   });
 }
@@ -102,26 +124,24 @@ function ensureSpecPlaceholder() {
   specImg = specImg || document.querySelector('#spec-pic');
   if (!specImg) return;
 
-  // se já existir, mantém
   placeholderDiv = specImg.parentElement.querySelector('#spec-placeholder');
   if (placeholderDiv) return;
 
   const container = specImg.parentElement;
   const w = container?.clientWidth || specImg.clientWidth || 320;
-  const h = Math.round(w * 4 / 3); // 3:4 (portrait) — altura maior
+  const h = Math.round(w * 4 / 3); // 3:4
 
   placeholderDiv = document.createElement('div');
   placeholderDiv.id = 'spec-placeholder';
   Object.assign(placeholderDiv.style, {
     width: '100%',
-    height: `${h}px`,      // altura já correta, sem “telinha pequena”
-    aspectRatio: '3 / 4',  // ajuda em redimensionamentos
+    height: `${h}px`,
+    aspectRatio: '3 / 4',
     background: 'black',
     borderRadius: getComputedStyle(specImg).borderRadius || '12px',
     display: 'block'
   });
 
-  // garante que a imagem ocupará exatamente o mesmo espaço depois
   Object.assign(specImg.style, {
     width: '100%',
     height: 'auto',
@@ -133,7 +153,7 @@ function ensureSpecPlaceholder() {
   container.insertBefore(placeholderDiv, specImg.nextSibling);
 }
 
-/* ---------- Overlay da câmera (fora do div) ---------- */
+/* ---------- Overlay da câmera (fora do grid) ---------- */
 function ensureOverlay() {
   if (overlay) return overlay;
 
@@ -142,70 +162,39 @@ function ensureOverlay() {
   Object.assign(overlay.style, {
     position: 'fixed',
     inset: '0',
-    display: 'none',                 // oculto até a câmera estar pronta
+    display: 'none',            // só mostra quando estiver pronta
     alignItems: 'center',
     justifyContent: 'center',
     padding: '20px',
-    background: 'rgba(0,0,0,.55)',
+    background: 'rgba(0,0,0,0.55)',
     zIndex: '9999',
     touchAction: 'none'
   });
 
-  // Moldura do preview (tamanho fixo, evita saltos)
-  const frame = document.createElement('div');
-  frame.id = 'camera-frame';
-  Object.assign(frame.style, {
-    position: 'relative',
-    width: '88vw',
-    maxWidth: '720px',
-    height: 'calc(88vw * 1.3333)',  // altura fixa 4:3 — evita salto visual
-    maxHeight: '82vh',
-    background: '#000',
-    borderRadius: '16px',
-    overflow: 'hidden',
-    boxShadow: '0 10px 30px rgba(0,0,0,.5)',
-    transition: 'none',
-    willChange: 'transform'
-  });
-
-  // <video>
-  player = document.createElement('video');
-  player.id = 'player';
-  player.setAttribute('playsinline', '');
-  player.setAttribute('autoplay', '');
-  player.muted = true;
-  Object.assign(player.style, {
-    position: 'absolute',
-    inset: '0',
-    width: '100%',
-    height: '100%',
+  const vid = document.createElement('video');
+  player = vid;
+  Object.assign(vid.style, {
+    width: '100vw',
+    height: '100vh',
     objectFit: 'cover',
-    transformOrigin: '50% 50%',
-    cursor: 'pointer'
+    borderRadius: '0'
   });
+  vid.autoplay = true;
+  vid.playsInline = true;
+  vid.muted = true;
 
-  // Canvas oculto
-  canvas = document.createElement('canvas');
-  canvas.id = 'canvas';
-  canvas.style.display = 'none';
+  overlay.appendChild(vid);
 
-  frame.appendChild(player);
-  frame.appendChild(canvas);
-  overlay.appendChild(frame);
-  document.body.appendChild(overlay);
-
-  // Um ÚNICO listener (pointerdown é mais rápido)
-  overlay.addEventListener('pointerdown', (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (shotDone) return;                 
-    if (!streamReady) {                   
-      pendingShot = true;                 
-      return;
-    }
+  // Clique/tocar → tenta capturar (1 clique por abertura)
+  overlay.addEventListener('pointerdown', (ev) => {
+    ev.preventDefault();
+    ev.stopPropagation();
+    if (shotDone) return;
+    if (!streamReady) { pendingShot = true; return; }
     shutterPress();
   }, { passive:false });
 
+  document.body.appendChild(overlay);
   return overlay;
 }
 
@@ -231,7 +220,7 @@ async function openCameraOverlay(){
         if (player.readyState >= HTMLMediaElement.HAVE_ENOUGH_DATA && player.videoWidth > 0) {
           player.play().catch(()=>{});
           streamReady = true;
-          overlay.style.display = 'flex';       // só mostra depois de pronta
+          overlay.style.display = 'flex';   // mostra somente quando pronta
           if (pendingShot && !shotDone) {
             pendingShot = false;
             requestAnimationFrame(() => shutterPress());
@@ -312,7 +301,7 @@ async function shutterPress(){
   }
 }
 
-/* ---------- Busca de imagens (mantido + atalho local) ---------- */
+/* ---------- Busca de imagens (local → APIs) ---------- */
 function isAnimalIntent(term) {
   if (!term) return false;
   const t = term.toLowerCase().trim();
@@ -331,72 +320,47 @@ async function loadImg(word) {
   try {
     let searchTerm = (word || "").toLowerCase().trim();
 
-    // 1) ATALHO LOCAL: usa imagens definidas e captions personalizadas
+    // 1) ATALHO LOCAL
     const localItems = getStaticItems(searchTerm);
     if (localItems.length) {
-      // Mapa de "título do card" -> pista para achar no src (normaliza o 'DevianArt' vs 'DeviantArt', etc.)
-      const TITLE_HINT = {
-        pinterest: 'pinterest',
-        pexels: 'pexels',
-        artstation: 'artstation',
-        deviantart: 'devianart',
-        pixabay: 'pixabay',
-        freepik: 'freepik',
-        rawpixel: 'rawpixel',
-        unsplash: 'unsplash',   // não existe no array; cai no fallback sem repetir
-        stocksnap: 'stocksnap'  // idem
-      };
+      const cards = document.querySelectorAll('.i');
+      const TITLE_HINT = { pinterest:'pinterest', pexels:'pexels', artstation:'artstation', deviantart:'deviant', pixabay:'pixabay', freepik:'freepik', rawpixel:'rawpixel' };
 
-      // Seleciona só os 9 cards laterais (.i) e pula o central (Facebook)
-      const cards = document.querySelectorAll('#images .image.i');
+      cards.forEach((image, idx) => {
+        const title = (image.querySelector('.title')?.textContent || '').toLowerCase();
+        const imgEl  = image.querySelector('img');
+        const descEl = image.querySelector('.desc');
 
-      const used = new Set(); // garante que não repete imagem
-      let highPrioBudget = 2; // dois primeiros com prioridade alta
-      cards.forEach((card) => {
-        const title = (card.querySelector('.title')?.textContent || '').trim().toLowerCase();
-        const hint = TITLE_HINT[title] || title;
-
-        // 1) tenta casar pelo hint no src
-        let match = localItems.find(it => !used.has(it.src) && it.src.toLowerCase().includes(hint));
-
-        // 2) se não achar (ex.: Unsplash/StockSnap), pega a próxima não usada
-        if (!match) match = localItems.find(it => !used.has(it.src));
-
-        // 3) último recurso: usa o último item (ainda evita vazio)
-        if (!match) match = localItems[localItems.length - 1];
-
-        used.add(match.src);
-
-        const imgEl  = card.querySelector('img');
-        const descEl = card.querySelector('.desc');
-
-        if (imgEl) {
-          // alta prioridade nos dois primeiros; demais ficam padrão
-          if (highPrioBudget > 0) {
-            imgEl.setAttribute('fetchpriority', 'high');
-            imgEl.loading  = 'eager';
-            highPrioBudget--;
-          } else {
-            imgEl.setAttribute('fetchpriority', 'auto');
-            imgEl.loading  = 'lazy';
+        // tenta casar por título → senão cai em posição
+        let match = null;
+        for (const key in TITLE_HINT) {
+          if (title.includes(TITLE_HINT[key])) {
+            match = localItems.find(it => it.src.toLowerCase().includes(TITLE_HINT[key]));
+            if (match) break;
           }
+        }
+        if (!match) match = localItems[idx % localItems.length];
+
+        if (imgEl && match) {
+          // prioridade: primeiras 3 imagens eager
+          const eager = idx < 3;
+          imgEl.setAttribute('fetchpriority', eager ? 'high' : 'auto');
+          imgEl.loading  = eager ? 'eager' : 'lazy';
           imgEl.decoding = 'async';
-          imgEl.src = match.src; // navegador deve usar cache aquecido (se houver)
+          imgEl.src = match.src;
         }
 
-        // Prioridade: caption → fallback por palavra → nome de arquivo "bonitinho"
         const text = (match.caption && match.caption.trim())
           ? match.caption.trim()
-          : (DEFAULT_STATIC_TAGS[searchTerm] || prettyFromFilename(match.src));
+          : prettyFromFilename(match.src);
 
         if (descEl) descEl.textContent = truncateText(text, 30);
       });
       return; // não chama API
     }
 
-    // 2) (SE não houver local) segue fluxo normal de APIs
+    // 2) APIs
     const wantsAnimal = isAnimalIntent(searchTerm);
-
     if (["gato", "gata", "gatinho", "gatinha"].includes(searchTerm)) {
       searchTerm = "gato de estimação, gato doméstico, cat pet";
     }
@@ -441,7 +405,7 @@ async function loadImg(word) {
     const cards = document.querySelectorAll('.i');
     if (!results.length) {
       cards.forEach(image => {
-        const imgEl = image.querySelector('img');
+        const imgEl  = image.querySelector('img');
         const descEl = image.querySelector('.desc');
         if (imgEl) imgEl.removeAttribute('src');
         if (descEl) descEl.textContent = 'Nenhum resultado encontrado.';
@@ -449,135 +413,97 @@ async function loadImg(word) {
       return;
     }
 
-    let idx = 0;
-    cards.forEach(image => {
+    cards.forEach((image, idx) => {
       const hit = results[idx % results.length];
-      const imgEl = image.querySelector('img');
+      const imgEl  = image.querySelector('img');
       const descEl = image.querySelector('.desc');
-
-      if (imgEl && hit?.webformatURL) imgEl.src = hit.webformatURL;
-
-      let descText = (hit?.tags || hit?.user || '').toString();
-      descText = descText.replace(/\s*,\s*/g, ', ').replace(/\s{2,}/g, ' ');
-      const short = truncateText(descText, 30);
-
-      if (descEl) descEl.textContent = short;
-      idx++;
+      if (imgEl) {
+        const eager = idx < 3;
+        imgEl.setAttribute('fetchpriority', eager ? 'high' : 'auto');
+        imgEl.loading  = eager ? 'eager' : 'lazy';
+        imgEl.decoding = 'async';
+        imgEl.src = hit.webformatURL || hit.previewURL || hit.largeImageURL || '';
+      }
+      if (descEl) {
+        const text = truncateText(hit.tags || 'imagem');
+        descEl.textContent = text;
+      }
     });
-  } catch (err) {
-    console.error('loadImg error:', err);
-    document.querySelectorAll('.i .desc').forEach(d => d.textContent = 'Erro ao carregar imagens.');
+  } catch (e) {
+    console.error(e);
   }
 }
 
-/* ---------- UI / fluxo ---------- */
-function updateUIWithWord(newWord) {
-  word = (newWord || '').trim();
-  document.querySelector('#word-container')?.remove();
-  const q = document.querySelector('.D0h3Gf');
-  if (q) q.value = word;
-  document.querySelectorAll('span.word').forEach(s => { s.textContent = word; });
-  loadImg(word);
-  openCameraOverlay();
-}
-
-function bindWordCards(){
-  document.querySelectorAll('#word-container .item.word').forEach(box => {
-    const dt = box.getAttribute('data-type') || '';
-
-    // Aquecer 2–3 imagens da categoria ao detectar intenção (desktop e mobile)
-    const prime = () => warmCategory(dt, 3);
-    box.addEventListener('pointerenter', prime, { passive: true }); // hover (desktop)
-    box.addEventListener('touchstart',  prime, { passive: true });  // encostar (mobile)
-
-    // Clique: troca UI + abre câmera + popula cards
-    const onPick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      updateUIWithWord(dt);
-    };
-    box.addEventListener('pointerdown', onPick, { passive:false });
+/* ---------- Bindings ---------- */
+function disableMenuHashLinks(){
+  // desabilita navegação de anchors de menu (href="#")
+  document.querySelectorAll('.NZmxZe[href="#"]').forEach(a => {
+    a.addEventListener('click', (ev) => { ev.preventDefault(); ev.stopPropagation(); }, { passive:false });
   });
 }
-
-function bindSendButton(){
-  const inputEl = document.querySelector('#wordinput');
-  const btnEl = document.querySelector('#wordbtn');
-
-  // Clique no botão
-  btnEl?.addEventListener('click', (e) => {
-    e.preventDefault();
-    const val = (inputEl?.value || '').toLowerCase().trim();
-    updateUIWithWord(val);
-  });
-
-  // Pressionar Enter/Retorno faz o mesmo
-  inputEl?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      btnEl?.click();
-    }
-  });
-}
-
-/* ===== Clique no botão "Tudo" → Google (web) ===== */
-function bindBtnTudo() {
+function bindBtnTudo(){
   const btn = document.getElementById('btn-tudo');
   if (!btn) return;
-
-  btn.style.cursor = 'pointer';
   btn.addEventListener('click', (e) => {
-    e.preventDefault();
-    const input = document.querySelector('.D0h3Gf') || document.getElementById('wordinput');
-    const termo = (window.word && window.word.trim()) || (input?.value || '').trim();
-    const q = encodeURIComponent(termo);
-    const destino = q ? `https://www.google.com/search?q=${q}` : 'https://www.google.com/';
-    location.replace(destino); // substitui a entrada no histórico
-  });
+    e.preventDefault(); e.stopPropagation();
+    // modo "Tudo": aqui só garante que nada navega
+  }, { passive:false });
 }
-
-/* ===== Clique no botão "Imagens" → Google Images ===== */
-function bindBtnImagens() {
+function bindBtnImagens(){
   const btn = document.getElementById('btn-imagens');
   if (!btn) return;
-
-  btn.style.cursor = 'pointer';
   btn.addEventListener('click', (e) => {
-    e.preventDefault();
-    const input = document.querySelector('.D0h3Gf') || document.getElementById('wordinput');
-    const termo = (window.word && window.word.trim()) || (input?.value || '').trim();
-    const q = encodeURIComponent(termo);
-    // tbm=isch ativa a aba de imagens; fallback para home do Google Images
-    const destino = q
-      ? `https://www.google.com/search?tbm=isch&q=${q}`
-      : 'https://www.google.com/imghp';
-    location.replace(destino); // substitui a entrada no histórico
+    e.preventDefault(); e.stopPropagation();
+    // já estamos na aba imagens; não faz nada além de bloquear navegação
+  }, { passive:false });
+}
+function bindWordCards(){
+  // botões Vaca/Veado/Gata
+  document.querySelectorAll('#word-container .item.word').forEach(el => {
+    el.addEventListener('click', () => {
+      const t = el.getAttribute('data-type') || '';
+      word = t;
+      warmCategory(t, 3);
+      loadImg(t);
+      // abre câmera no clique do card central (#spec-pic), não aqui
+    }, { passive:true });
+  });
+
+  // input + botão Ok
+  const input = document.getElementById('wordinput');
+  const btn   = document.getElementById('wordbtn');
+  if (btn) btn.addEventListener('click', () => {
+    word = (input.value || '').toLowerCase().trim();
+    loadImg(word);
+  }, { passive:true });
+  if (input) input.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter') { ev.preventDefault(); btn?.click(); }
   });
 }
-
-/* ===== Evita que os links do menu adicionem "#" ao histórico ===== */
-function disableMenuHashLinks() {
-  // seleciona todos os links do menu (classe usada no HTML: .NZmxZe)
-  document.querySelectorAll('.NZmxZe').forEach(a => {
-    // deixa passar os dois botões que já têm handlers próprios
-    if (a.id === 'btn-tudo' || a.id === 'btn-imagens') return;
-
-    // previne default (não altera URL nem empurra estado no histórico)
-    a.addEventListener('click', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }, { passive: false });
-  });
+function bindSendButton(){
+  // clique na imagem central → abre câmera
+  const sp = document.getElementById('spec-pic');
+  if (!sp) return;
+  sp.addEventListener('click', (e) => {
+    e.preventDefault(); e.stopPropagation();
+    openCameraOverlay();
+  }, { passive:false });
 }
 
-/* ---------- Inicialização ---------- */
+/* ---------- Init ---------- */
 function init(){
   specImg = document.querySelector('#spec-pic');
   bindWordCards();
   bindSendButton();
-  bindBtnTudo();     // ativa o "Tudo"
-  bindBtnImagens();  // ativa o "Imagens"
-  disableMenuHashLinks(); // 👈 evita o "#" do histórico
+  bindBtnTudo();
+  bindBtnImagens();
+  disableMenuHashLinks();
+
+  // Mantém a tela acordada
+  requestWakeLock();
+
+  // aquecimento leve das categorias principais
+  ['vaca','gata','veado'].forEach(c => warmCategory(c, 2));
 }
 
 window.addEventListener('load', init, false);
