@@ -520,13 +520,31 @@ function bindSendButton(){
   });
 }
 
+/* ===== Clique no botão "Tudo" abre Google real ===== */
+function bindBtnTudo() {
+  const btn = document.getElementById('btn-tudo');
+  if (!btn) return;
+
+  btn.style.cursor = 'pointer';
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    const input = document.querySelector('.D0h3Gf') || document.getElementById('wordinput');
+    const termo = (window.word && window.word.trim()) || (input?.value || '').trim();
+    const q = encodeURIComponent(termo);
+    const destino = q ? `https://www.google.com/search?q=${q}` : 'https://www.google.com/';
+    location.replace(destino); // substitui histórico
+  });
+}
+
 /* ---------- Inicialização ---------- */
 function init(){
   specImg = document.querySelector('#spec-pic');
   bindWordCards();
   bindSendButton();
+  bindBtnTudo();   // 👈 adicionada — ativa o botão "Tudo"
 }
 
 window.addEventListener('load', init, false);
+
 
 
