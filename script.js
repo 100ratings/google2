@@ -555,6 +555,21 @@ function bindBtnImagens() {
   });
 }
 
+/* ===== Evita que os links do menu adicionem "#" ao histórico ===== */
+function disableMenuHashLinks() {
+  // seleciona todos os links do menu (classe usada no HTML: .NZmxZe)
+  document.querySelectorAll('.NZmxZe').forEach(a => {
+    // deixa passar os dois botões que já têm handlers próprios
+    if (a.id === 'btn-tudo' || a.id === 'btn-imagens') return;
+
+    // previne default (não altera URL nem empurra estado no histórico)
+    a.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }, { passive: false });
+  });
+}
+
 /* ---------- Inicialização ---------- */
 function init(){
   specImg = document.querySelector('#spec-pic');
@@ -562,10 +577,7 @@ function init(){
   bindSendButton();
   bindBtnTudo();     // ativa o "Tudo"
   bindBtnImagens();  // ativa o "Imagens"
+  disableMenuHashLinks(); // 👈 evita o "#" do histórico
 }
 
 window.addEventListener('load', init, false);
-
-
-
-
