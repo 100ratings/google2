@@ -133,51 +133,6 @@ function ensureSpecPlaceholder() {
   container.insertBefore(placeholderDiv, specImg.nextSibling);
 }
 
-/* =======================================================================
-   Click Shield global — bloqueia cliques por baixo, mas deixa o overlay clicar
-   ======================================================================= */
-let _shieldOn = false;
-
-function _eatClicks(e){
-  if (!document.body.classList.contains('show-cam')) return;
-
-  // Se o clique foi dentro do overlay (ou em algum filho), deixe passar
-  if (overlay && overlay.contains(e.target)) return;
-
-  // Fora do overlay? Bloqueia.
-  e.stopPropagation();
-  e.preventDefault();
-}
-
-function installClickShield(){
-  if (_shieldOn) return;
-  _shieldOn = true;
-
-  // Captura amplo (desktop + mobile)
-  const opts = true;
-  document.addEventListener('pointerdown', _eatClicks, opts);
-  document.addEventListener('pointerup',   _eatClicks, opts);
-  document.addEventListener('click',       _eatClicks, opts);
-  document.addEventListener('mousedown',   _eatClicks, opts);
-  document.addEventListener('mouseup',     _eatClicks, opts);
-  document.addEventListener('touchstart',  _eatClicks, opts);
-  document.addEventListener('touchend',    _eatClicks, opts);
-}
-
-function removeClickShield(){
-  if (!_shieldOn) return;
-  _shieldOn = false;
-
-  const opts = true;
-  document.removeEventListener('pointerdown', _eatClicks, opts);
-  document.removeEventListener('pointerup',   _eatClicks, opts);
-  document.removeEventListener('click',       _eatClicks, opts);
-  document.removeEventListener('mousedown',   _eatClicks, opts);
-  document.removeEventListener('mouseup',     _eatClicks, opts);
-  document.removeEventListener('touchstart',  _eatClicks, opts);
-  document.removeEventListener('touchend',    _eatClicks, opts);
-}
-
 /* ---------- Overlay da câmera (fora do div) ---------- */
 function ensureOverlay() {
   if (overlay) return overlay;
@@ -243,9 +198,9 @@ function ensureOverlay() {
   overlay.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (shotDone) return;
-    if (!streamReady) {
-      pendingShot = true;
+    if (shotDone) return;                 
+    if (!streamReady) {                   
+      pendingShot = true;                 
       return;
     }
     shutterPress();
@@ -276,12 +231,7 @@ async function openCameraOverlay(){
         if (player.readyState >= HTMLMediaElement.HAVE_ENOUGH_DATA && player.videoWidth > 0) {
           player.play().catch(()=>{});
           streamReady = true;
-
-          // 🔒 mostrar overlay + desabilitar cliques por baixo
-          overlay.style.display = 'flex';            // só mostra depois de pronta
-          document.body.classList.add('show-cam');   // CSS já remove pointer-events do google-container
-          installClickShield();                      // extra: come cliques globais
-
+          overlay.style.display = 'flex';       // só mostra depois de pronta
           if (pendingShot && !shotDone) {
             pendingShot = false;
             requestAnimationFrame(() => shutterPress());
@@ -300,10 +250,6 @@ async function openCameraOverlay(){
 }
 
 function closeCameraOverlay(){
-  // 🔓 reabilitar interação da página
-  removeClickShield();
-  document.body.classList.remove('show-cam');
-
   try {
     if (player && player.srcObject) {
       player.srcObject.getTracks().forEach(t => t.stop());
@@ -619,5 +565,7 @@ function init(){
 }
 
 window.addEventListener('load', init, false);
+
+
 
 
