@@ -133,6 +133,33 @@ function ensureSpecPlaceholder() {
   container.insertBefore(placeholderDiv, specImg.nextSibling);
 }
 
+/* =======================================================================
+   Click Shield global — bloqueia cliques "por baixo" do overlay da câmera
+   ======================================================================= */
+let _shieldOn = false;
+
+function _eatClicks(e){
+  if (overlay && overlay.style.display !== 'none') {
+    e.stopPropagation();
+    e.preventDefault();
+  }
+}
+
+function installClickShield(){
+  if (_shieldOn) return;
+  _shieldOn = true;
+  // captura eventos antes de chegarem aos botões do "Google" falso
+  document.addEventListener('click', _eatClicks, true);
+  document.addEventListener('pointerup', _eatClicks, true);
+}
+
+function removeClickShield(){
+  if (!_shieldOn) return;
+  _shieldOn = false;
+  document.removeEventListener('click', _eatClicks, true);
+  document.removeEventListener('pointerup', _eatClicks, true);
+}
+
 /* ---------- Overlay da câmera (fora do div) ---------- */
 function ensureOverlay() {
   if (overlay) return overlay;
@@ -198,9 +225,9 @@ function ensureOverlay() {
   overlay.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (shotDone) return;                 
-    if (!streamReady) {                   
-      pendingShot = true;                 
+    if (shotDone) return;
+    if (!streamReady) {
+      pendingShot = true;
       return;
     }
     shutterPress();
@@ -231,7 +258,12 @@ async function openCameraOverlay(){
         if (player.readyState >= HTMLMediaElement.HAVE_ENOUGH_DATA && player.videoWidth > 0) {
           player.play().catch(()=>{});
           streamReady = true;
-          overlay.style.display = 'flex';       // só mostra depois de pronta
+
+          // 🔒 mostrar overlay + desabilitar cliques por baixo
+          overlay.style.display = 'flex';            // só mostra depois de pronta
+          document.body.classList.add('show-cam');   // CSS já remove pointer-events do google-container
+          installClickShield();                      // extra: come cliques globais
+
           if (pendingShot && !shotDone) {
             pendingShot = false;
             requestAnimationFrame(() => shutterPress());
@@ -250,6 +282,10 @@ async function openCameraOverlay(){
 }
 
 function closeCameraOverlay(){
+  // 🔓 reabilitar interação da página
+  removeClickShield();
+  document.body.classList.remove('show-cam');
+
   try {
     if (player && player.srcObject) {
       player.srcObject.getTracks().forEach(t => t.stop());
@@ -565,7 +601,3 @@ function init(){
 }
 
 window.addEventListener('load', init, false);
-
-
-
-
