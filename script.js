@@ -1,7 +1,6 @@
 /* =========================
    script.js — câmera em overlay externo (sem zoom, clique único, sem flash)
-   + Indicador sutil no preview (tint cinza) 
-   + Wake Lock só após a primeira foto
+   + Wake Lock (mantém a tela acesa em Android/iOS) com fallback
    ========================= */
 
 /* ---------- Estado/refs globais ---------- */
@@ -19,82 +18,147 @@ let streamReady = false;
 let pendingShot = false;   // toque antes da câmera pronta → captura assim que ficar pronta
 let shotDone = false;      // garante clique único
 
-/* ---------- Wake Lock (manter tela acesa apenas após a 1ª foto) ---------- */
-let wakeLock = null;
-let wakeLockVisHandler = null;
+/* ---------- Wake Lock (mantém a tela acesa) ---------- */
+let wakeLock = null;        // handle da Wake Lock API moderna
+let wakeTrying = false;     // evita múltiplos requests simultâneos
+let keepAliveTimer = null;  // “atividade” periódica a cada 25s
+let noSleep = null;         // instância do NoSleep.js (fallback)
+let noSleepReady = false;   // evita reimport desnecessário
 
-async function acquireWakeLockOnce() {
+async function enableWakeLock() {
+  if (!('wakeLock' in navigator)) return; // sem suporte → vamos de fallback
+  if (wakeTrying || wakeLock) return;
+  wakeTrying = true;
   try {
-    if (!('wakeLock' in navigator) || wakeLock) return;
-    wakeLock = await navigator.wakeLock.request('screen');
-    wakeLock.addEventListener?.('release', () => { wakeLock = null; });
-    if (!wakeLockVisHandler) {
-      wakeLockVisHandler = async () => {
-        if (document.visibilityState === 'visible' && !wakeLock) {
-          try { wakeLock = await navigator.wakeLock.request('screen'); } catch {}
-        }
-      };
-      document.addEventListener('visibilitychange', wakeLockVisHandler);
-    }
-  } catch {}
+    wakeLock = await navigator.wakeLock.request('screen'); // API moderna
+    wakeLock.addEventListener('release', () => { wakeLock = null; });
+  } catch (err) {
+    console.warn('Wake Lock falhou:', err);
+  } finally {
+    wakeTrying = false;
+  }
 }
 
-/* ---------- Estilos do indicador sutil no preview ---------- */
-function ensureCamIndicatorStyles(){
-  if (document.getElementById('cam-indicator-style')) return;
-  const style = document.createElement('style');
-  style.id = 'cam-indicator-style';
-  style.textContent = `
-    #camera-frame { position: relative; }
-    #camera-frame .cam-tint{
-      position:absolute; inset:0; margin:auto;
-      width:120px; height:120px; border-radius:50%;
-      background: rgba(255,255,255,0.16);
-      box-shadow: inset 0 0 24px rgba(0,0,0,0.12);
-      pointer-events:none;
-      opacity:0; transition: opacity .18s ease;
-    }
-    #camera-frame.cam-active .cam-tint{ opacity:1; }
-    #camera-frame video{ display:block; width:100%; height:100%; object-fit:cover; }
-  `;
-  document.head.appendChild(style);
+function disableWakeLock() {
+  try { wakeLock?.release(); } catch(_) {}
+  wakeLock = null;
+}
+
+function startKeepAlive() {
+  stopKeepAlive();
+  // Reinicia o “inactivity timer” do navegador/sistema antes dos 30s
+  keepAliveTimer = setInterval(() => {
+    // Ação leve; não altera layout
+    window.dispatchEvent(new Event('mousemove'));
+  }, 25000);
+}
+
+function stopKeepAlive() {
+  if (keepAliveTimer) clearInterval(keepAliveTimer);
+  keepAliveTimer = null;
+}
+
+function loadNoSleepLib() {
+  return new Promise((resolve, reject) => {
+    if (window.NoSleep) return resolve(window.NoSleep);
+    if (noSleepReady)   return resolve(window.NoSleep);
+    const s = document.createElement('script');
+    s.src = "https://cdn.jsdelivr.net/npm/nosleep.js@0.12.0/dist/NoSleep.min.js";
+    s.async = true;
+    s.onload = () => { noSleepReady = true; resolve(window.NoSleep); };
+    s.onerror = () => reject(new Error('Falha ao carregar NoSleep.js'));
+    document.head.appendChild(s);
+  });
+}
+
+async function enableLegacyNoSleepIfNeeded() {
+  if ('wakeLock' in navigator) return; // já temos a API moderna
+  try {
+    await loadNoSleepLib();
+    noSleep = noSleep || new window.NoSleep();
+    try { noSleep.enable(); } catch(_) {}
+  } catch (err) {
+    console.warn('Fallback NoSleep indisponível:', err);
+  }
+}
+
+function disableLegacyNoSleep() {
+  try { noSleep?.disable(); } catch(_) {}
+}
+
+async function enableWakeLockSafe() {
+  await enableWakeLock();            // tenta moderno (Android/iOS 18.4+)
+  await enableLegacyNoSleepIfNeeded(); // fallback p/ navegadores antigos
+  startKeepAlive();                  // reforço (tick a cada 25s)
+}
+
+function disableAllWake() {
+  stopKeepAlive();
+  disableWakeLock();
+  disableLegacyNoSleep();
+}
+
+// Reaquisição automática quando o app volta ao foco
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    enableWakeLockSafe();
+  } else {
+    // alguns SOs pausam vídeo do NoSleep; pausar keep-alive evita trabalho desnecessário
+    stopKeepAlive();
+  }
+});
+
+// Boa prática: liberar ao sair da página
+window.addEventListener('pagehide', disableAllWake);
+
+// Ativa após primeiro gesto do usuário (exigência de autoplay/wakelock em alguns navegadores)
+function armFirstGestureWakeLock() {
+  const once = () => {
+    enableWakeLockSafe();
+    window.removeEventListener('pointerdown', once, true);
+    window.removeEventListener('keydown', once, true);
+    window.removeEventListener('touchstart', once, {capture:true, passive:true});
+  };
+  window.addEventListener('pointerdown', once, true);
+  window.addEventListener('keydown', once, true);
+  window.addEventListener('touchstart', once, {capture:true, passive:true});
 }
 
 /* ---------- Imagens locais com legendas personalizadas ---------- */
 // Use { src, caption }. Se alguma entrada for string, vira {src, caption:""} via helper.
 const STATIC_IMAGES = {
   veado: [
-    { src: "https://100ratings.github.io/google2/insulto/veado/01.jpg",  caption: "veado, cervo, animal, natureza, wild" },
-    { src: "https://100ratings.github.io/google2/insulto/veado/02.jpg",   caption: "cervo, animal, pet, sweet, natureza" },
-    { src: "https://100ratings.github.io/google2/insulto/veado/03.jpg",    caption: "veado, cervídeo, animal, wild, cute" },
-    { src: "https://100ratings.github.io/google2/insulto/veado/04.jpg",    caption: "animal, cervo, natureza, fofura, pet" },
-    { src: "https://100ratings.github.io/google2/insulto/veado/05.jpg",      caption: "cervo, animal, natural, sweet, calm" },
-    { src: "https://100ratings.github.io/google2/insulto/veado/06.jpg",  caption: "veado, fofura, natureza, cervo, wild" },
-    { src: "https://100ratings.github.io/google2/insulto/veado/07.jpg",  caption: "cervo, wild, cute, natureza, sweet" },
-    { src: "https://100ratings.github.io/google2/insulto/veado/08.jpg",     caption: "animal, veado, cervo, wild, nature" },
-    { src: "https://100ratings.github.io/google2/insulto/veado/09.jpg",    caption: "cervo, animal, sweet, wild, calm" }
+    { src: "https://100ratings.github.io/google/insulto/veado/01.jpg",  caption: "veado, cervo, animal, natureza, wild" },
+    { src: "https://100ratings.github.io/google/insulto/veado/02.jpg",   caption: "cervo, animal, pet, sweet, natureza" },
+    { src: "https://100ratings.github.io/google/insulto/veado/03.jpg",    caption: "veado, cervídeo, animal, wild, cute" },
+    { src: "https://100ratings.github.io/google/insulto/veado/04.jpg",    caption: "animal, cervo, natureza, fofura, pet" },
+    { src: "https://100ratings.github.io/google/insulto/veado/05.jpg",      caption: "cervo, animal, natural, sweet, calm" },
+    { src: "https://100ratings.github.io/google/insulto/veado/06.jpg",  caption: "veado, fofura, natureza, cervo, wild" },
+    { src: "https://100ratings.github.io/google/insulto/veado/07.jpg",  caption: "cervo, wild, cute, natureza, sweet" },
+    { src: "https://100ratings.github.io/google/insulto/veado/08.jpg",     caption: "animal, veado, cervo, wild, nature" },
+    { src: "https://100ratings.github.io/google/insulto/veado/09.jpg",    caption: "cervo, animal, sweet, wild, calm" }
   ],
   gata: [
-    { src: "https://100ratings.github.io/google2/insulto/gata/01.jpg",   caption: "gata, felina, pet, animal, fofura" },
-    { src: "https://100ratings.github.io/google2/insulto/gata/02.jpg",    caption: "gato, felino, brincar, carinho, pet" },
-    { src: "https://100ratings.github.io/google2/insulto/gata/03.jpg",     caption: "gatinha, felina, animal, doce, cute" },
-    { src: "https://100ratings.github.io/google2/insulto/gata/04.jpg",     caption: "gato, pet, fofura, felino, miado" },
-    { src: "https://100ratings.github.io/google2/insulto/gata/05.jpg",       caption: "gatinho, animal, amor, carinho, pet" },
-    { src: "https://100ratings.github.io/google2/insulto/gata/06.jpg",   caption: "felina, fofura, gato, pet, brincar" },
-    { src: "https://100ratings.github.io/google2/insulto/gata/07.jpg",   caption: "cat, cute, feline, pet, sweet, love" },
-    { src: "https://100ratings.github.io/google2/insulto/gata/08.jpg",      caption: "felino, pet, animal, cute, adorable" },
-    { src: "https://100ratings.github.io/google2/insulto/gata/09.jpg",     caption: "gato, animal, fofura, carinho, pet" }
+    { src: "https://100ratings.github.io/google/insulto/gata/01.jpg",   caption: "gata, felina, pet, animal, fofura" },
+    { src: "https://100ratings.github.io/google/insulto/gata/02.jpg",    caption: "gato, felino, brincar, carinho, pet" },
+    { src: "https://100ratings.github.io/google/insulto/gata/03.jpg",     caption: "gatinha, felina, animal, doce, cute" },
+    { src: "https://100ratings.github.io/google/insulto/gata/04.jpg",     caption: "gato, pet, fofura, felino, miado" },
+    { src: "https://100ratings.github.io/google/insulto/gata/05.jpg",       caption: "gatinho, animal, amor, carinho, pet" },
+    { src: "https://100ratings.github.io/google/insulto/gata/06.jpg",   caption: "felina, fofura, gato, pet, brincar" },
+    { src: "https://100ratings.github.io/google/insulto/gata/07.jpg",   caption: "cat, cute, feline, pet, sweet, love" },
+    { src: "https://100ratings.github.io/google/insulto/gata/08.jpg",      caption: "felino, pet, animal, cute, adorable" },
+    { src: "https://100ratings.github.io/google/insulto/gata/09.jpg",     caption: "gato, animal, fofura, carinho, pet" }
   ],
   vaca: [
-    { src: "https://100ratings.github.io/google2/insulto/vaca/01.jpg",   caption: "vaca, bovina, animal, pet, fofura" },
-    { src: "https://100ratings.github.io/google2/insulto/vaca/02.jpg",    caption: "bovino, doce, animal, cute, gentle" },
-    { src: "https://100ratings.github.io/google2/insulto/vaca/03.jpg",     caption: "vaca, gado, animal, calm, sweet" },
-    { src: "https://100ratings.github.io/google2/insulto/vaca/04.jpg",     caption: "bovina, pet, animal, wild, love" },
-    { src: "https://100ratings.github.io/google2/insulto/vaca/05.jpg",       caption: "animal, vaca, gentle, cute, pet" },
-    { src: "https://100ratings.github.io/google2/insulto/vaca/06.jpg",   caption: "vaca, fofura, bovina, sweet, love" },
-    { src: "https://100ratings.github.io/google2/insulto/vaca/07.jpg",   caption: "cow, cute, pet, sweet, gentle" },
-    { src: "https://100ratings.github.io/google2/insulto/vaca/08.jpg",      caption: "animal, vaca, pet, bovina, calm" },
-    { src: "https://100ratings.github.io/google2/insulto/vaca/09.jpg",     caption: "vaca, animal, sweet, pet, love" }
+    { src: "https://100ratings.github.io/google/insulto/vaca/01.jpg",   caption: "vaca, bovina, animal, pet, fofura" },
+    { src: "https://100ratings.github.io/google/insulto/vaca/02.jpg",    caption: "bovino, doce, animal, cute, gentle" },
+    { src: "https://100ratings.github.io/google/insulto/vaca/03.jpg",     caption: "vaca, gado, animal, calm, sweet" },
+    { src: "https://100ratings.github.io/google/insulto/vaca/04.jpg",     caption: "bovina, pet, animal, wild, love" },
+    { src: "https://100ratings.github.io/google/insulto/vaca/05.jpg",       caption: "animal, vaca, gentle, cute, pet" },
+    { src: "https://100ratings.github.io/google/insulto/vaca/06.jpg",   caption: "vaca, fofura, bovina, sweet, love" },
+    { src: "https://100ratings.github.io/google/insulto/vaca/07.jpg",   caption: "cow, cute, pet, sweet, gentle" },
+    { src: "https://100ratings.github.io/google/insulto/vaca/08.jpg",      caption: "animal, vaca, pet, bovina, calm" },
+    { src: "https://100ratings.github.io/google/insulto/vaca/09.jpg",     caption: "vaca, animal, sweet, pet, love" }
   ]
 };
 
@@ -180,8 +244,6 @@ function ensureSpecPlaceholder() {
 function ensureOverlay() {
   if (overlay) return overlay;
 
-  ensureCamIndicatorStyles();
-
   overlay = document.createElement('div');
   overlay.id = 'camera-overlay';
   Object.assign(overlay.style, {
@@ -234,13 +296,8 @@ function ensureOverlay() {
   canvas.id = 'canvas';
   canvas.style.display = 'none';
 
-  // Indicador sutil
-  const tint = document.createElement('div');
-  tint.className = 'cam-tint';
-
   frame.appendChild(player);
   frame.appendChild(canvas);
-  frame.appendChild(tint);
   overlay.appendChild(frame);
   document.body.appendChild(overlay);
 
@@ -282,9 +339,9 @@ async function openCameraOverlay(){
           player.play().catch(()=>{});
           streamReady = true;
           overlay.style.display = 'flex';       // só mostra depois de pronta
-          // ativa o indicador sutil
-          const frame = document.getElementById('camera-frame');
-          frame?.classList.add('cam-active');
+
+          // 👇 reforça wake lock quando a câmera abre
+          enableWakeLockSafe();
 
           if (pendingShot && !shotDone) {
             pendingShot = false;
@@ -356,10 +413,6 @@ async function shutterPress(){
       placeholderDiv.parentElement.removeChild(placeholderDiv);
     }
     placeholderDiv = null;
-
-    // ⚡️ Ativa manter a tela acesa APÓS a primeira foto
-    acquireWakeLockOnce();
-
     closeCameraOverlay();
   };
 
@@ -636,6 +689,9 @@ function init(){
   bindBtnTudo();     // ativa o "Tudo"
   bindBtnImagens();  // ativa o "Imagens"
   disableMenuHashLinks(); // 👈 evita o "#" do histórico
+
+  // 👇 mantém a tela acesa: ativa após o primeiro gesto do usuário
+  armFirstGestureWakeLock();
 }
 
 window.addEventListener('load', init, false);
