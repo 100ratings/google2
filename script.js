@@ -1,6 +1,5 @@
 /* =========================
    script.js — câmera em overlay externo (sem zoom, clique único, sem flash)
-   + Wake Lock com indicador visual
    ========================= */
 
 /* ---------- Estado/refs globais ---------- */
@@ -18,11 +17,10 @@ let streamReady = false;
 let pendingShot = false;   // toque antes da câmera pronta → captura assim que ficar pronta
 let shotDone = false;      // garante clique único
 
-/* ======== KEEP AWAKE (Wake Lock + fallback) ======== */
+/* ======== KEEP AWAKE (Wake Lock + ponto indicador) ======== */
 let wakeLock = null;
 let keepAliveTimer = null;
 
-// Indicador visual (ponto) — on=fake lock real; fb=fallback; off=desligado
 let wakeIndicator;
 (function injectWakeIndicatorCSS(){
   const css = `
@@ -33,20 +31,10 @@ let wakeIndicator;
       box-shadow:0 0 0 6px rgba(154,160,166,.10);
       transition:background .2s ease, opacity .2s ease, transform .2s ease;
     }
-    #wake-dot.on{
-      background:#26c281; /* verde (ativo real) */
-      box-shadow:0 0 0 6px rgba(38,194,129,.12);
-    }
-    #wake-dot.fb{
-      background:#f6c26b; /* âmbar (fallback) */
-      box-shadow:0 0 0 6px rgba(246,194,107,.12);
-      animation:pulse 2.2s ease-in-out infinite;
-    }
-    #wake-dot.off{
-      background:#9aa0a6; /* cinza (inativo) */
-      box-shadow:0 0 0 6px rgba(154,160,166,.10);
-    }
-    #wake-dot::after{ content:""; position:absolute; inset:-8px; } /* alvo de toque maior */
+    #wake-dot.on{ background:#26c281; box-shadow:0 0 0 6px rgba(38,194,129,.12); } /* verde = real */
+    #wake-dot.fb{ background:#f6c26b; box-shadow:0 0 0 6px rgba(246,194,107,.12); animation:pulse 2.2s ease-in-out infinite; } /* fallback */
+    #wake-dot.off{ background:#9aa0a6; box-shadow:0 0 0 6px rgba(154,160,166,.10); } /* inativo */
+    #wake-dot::after{ content:""; position:absolute; inset:-8px; } /* alvo maior */
     @keyframes pulse{ 0%,100%{ transform:scale(1) } 50%{ transform:scale(1.12) } }
   `;
   const s = document.createElement('style');
@@ -63,56 +51,36 @@ function ensureWakeIndicator(){
   document.body.appendChild(wakeIndicator);
   return wakeIndicator;
 }
-function setWakeStatus(state){ // 'on' | 'fb' | 'off'
-  ensureWakeIndicator();
-  wakeIndicator.className = state || 'off';
-}
+function setWakeStatus(state){ (ensureWakeIndicator()).className = state || 'off'; }
 
 async function requestWakeLock() {
   ensureWakeIndicator();
   if ('wakeLock' in navigator) {
     try {
-      // se já existir, libera antes de pedir outro
-      try { await wakeLock?.release?.(); } catch(_) {}
+      try { await (wakeLock?.release?.()); } catch(_){}
       wakeLock = await navigator.wakeLock.request('screen');
-      setWakeStatus('on'); // ✅ verde = ativo real
-      wakeLock.addEventListener('release', () => {
-        wakeLock = null;
-        setWakeStatus('off');
-      });
-    } catch (_) {
-      startKeepAliveFallback(); // cai para fallback se falhar
-    }
+      setWakeStatus('on'); // ✅ VERDE = ativo real
+      wakeLock.addEventListener('release', () => { wakeLock = null; setWakeStatus('off'); });
+    } catch(_) { startKeepAliveFallback(); }
   } else {
     startKeepAliveFallback();
   }
 }
-
 function startKeepAliveFallback(){
-  if (!keepAliveTimer) {
-    keepAliveTimer = setInterval(() => { window.scrollTo(0, 0); }, 25000);
-  }
+  if (!keepAliveTimer) keepAliveTimer = setInterval(() => { window.scrollTo(0,0); }, 25000);
   setWakeStatus('fb'); // âmbar = fallback
 }
-
 function stopKeepAwake(){
-  try { wakeLock?.release?.(); } catch(_) {}
+  try { wakeLock?.release?.(); } catch(_){}
   wakeLock = null;
   if (keepAliveTimer) { clearInterval(keepAliveTimer); keepAliveTimer = null; }
   setWakeStatus('off');
 }
-
-// Reaquisição automática ao voltar
+// Reativar ao voltar e em qualquer toque
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') {
-    // tenta reativar o lock real; se não der, ao menos o fallback ficará ligado
-    requestWakeLock();
-  } else {
-    setWakeStatus('off');
-  }
+  if (document.visibilityState === 'visible') requestWakeLock();
+  else setWakeStatus('off');
 });
-
-// “Toque em qualquer lugar” também reativa
 document.addEventListener('pointerdown', () => {
   if (!wakeLock) requestWakeLock();
 }, { passive:true });
@@ -123,40 +91,51 @@ document.addEventListener('pointerdown', () => {
 const STATIC_IMAGES = {
   veado: [
     { src: "https://100ratings.github.io/google2/insulto/veado/01.jpg",  caption: "veado, cervo, animal, natureza, wild" },
-    { src: "https://100ratings.github.io/google2/insulto/veado/02.jpg",  caption: "cervo, animal, pet, sweet, natureza" },
-    { src: "https://100ratings.github.io/google2/insulto/veado/03.jpg",  caption: "veado, cervídeo, animal, wild, cute" },
-    { src: "https://100ratings.github.io/google2/insulto/veado/04.jpg",  caption: "animal, cervo, natureza, fofura, pet" },
-    { src: "https://100ratings.github.io/google2/insulto/veado/05.jpg",  caption: "cervo, animal, natural, sweet, calm" },
+    { src: "https://100ratings.github.io/google2/insulto/veado/02.jpg",   caption: "cervo, animal, pet, sweet, natureza" },
+    { src: "https://100ratings.github.io/google2/insulto/veado/03.jpg",    caption: "veado, cervídeo, animal, wild, cute" },
+    { src: "https://100ratings.github.io/google2/insulto/veado/04.jpg",    caption: "animal, cervo, natureza, fofura, pet" },
+    { src: "https://100ratings.github.io/google2/insulto/veado/05.jpg",      caption: "cervo, animal, natural, sweet, calm" },
     { src: "https://100ratings.github.io/google2/insulto/veado/06.jpg",  caption: "veado, fofura, natureza, cervo, wild" },
     { src: "https://100ratings.github.io/google2/insulto/veado/07.jpg",  caption: "cervo, wild, cute, natureza, sweet" },
-    { src: "https://100ratings.github.io/google2/insulto/veado/08.jpg",  caption: "animal, veado, cervo, wild, nature" },
-    { src: "https://100ratings.github.io/google2/insulto/veado/09.jpg",  caption: "cervo, animal, sweet, wild, calm" }
+    { src: "https://100ratings.github.io/google2/insulto/veado/08.jpg",     caption: "animal, veado, cervo, wild, nature" },
+    { src: "https://100ratings.github.io/google2/insulto/veado/09.jpg",    caption: "cervo, animal, sweet, wild, calm" }
   ],
   gata: [
     { src: "https://100ratings.github.io/google2/insulto/gata/01.jpg",   caption: "gata, felina, pet, animal, fofura" },
-    { src: "https://100ratings.github.io/google2/insulto/gata/02.jpg",   caption: "gato, felino, brincar, carinho, pet" },
-    { src: "https://100ratings.github.io/google2/insulto/gata/03.jpg",   caption: "gatinha, felina, animal, doce, cute" },
-    { src: "https://100ratings.github.io/google2/insulto/gata/04.jpg",   caption: "gato doméstico, pet, casa, cozy" },
-    { src: "https://100ratings.github.io/google2/insulto/gata/05.jpg",   caption: "felino fofo, whiskers, cute" },
-    { src: "https://100ratings.github.io/google2/insulto/gata/06.jpg",   caption: "cat pet, olhos grandes, meigo" },
-    { src: "https://100ratings.github.io/google2/insulto/gata/07.jpg",   caption: "gato de estimação, peludo" },
-    { src: "https://100ratings.github.io/google2/insulto/gata/08.jpg",   caption: "felina, ronronar, carinho" },
-    { src: "https://100ratings.github.io/google2/insulto/gata/09.jpg",   caption: "cat cute, lazy, sofá" }
+    { src: "https://100ratings.github.io/google2/insulto/gata/02.jpg",    caption: "gato, felino, brincar, carinho, pet" },
+    { src: "https://100ratings.github.io/google2/insulto/gata/03.jpg",     caption: "gatinha, felina, animal, doce, cute" },
+    { src: "https://100ratings.github.io/google2/insulto/gata/04.jpg",     caption: "gato, pet, fofura, felino, miado" },
+    { src: "https://100ratings.github.io/google2/insulto/gata/05.jpg",       caption: "gatinho, animal, amor, carinho, pet" },
+    { src: "https://100ratings.github.io/google2/insulto/gata/06.jpg",   caption: "felina, fofura, gato, pet, brincar" },
+    { src: "https://100ratings.github.io/google2/insulto/gata/07.jpg",   caption: "cat, cute, feline, pet, sweet, love" },
+    { src: "https://100ratings.github.io/google2/insulto/gata/08.jpg",      caption: "felino, pet, animal, cute, adorable" },
+    { src: "https://100ratings.github.io/google2/insulto/gata/09.jpg",     caption: "gato, animal, fofura, carinho, pet" }
   ],
   vaca: [
-    { src: "https://gg0.nl/insulto/vaca/ArtStation.jpg",   caption: "vaca, pasto, fazenda" },
-    { src: "https://gg0.nl/insulto/vaca/DevianArt.jpg",    caption: "gado, bovino, campo" },
-    { src: "https://gg0.nl/insulto/vaca/Freepik1.jpg",     caption: "leite, rural, animal" },
-    { src: "https://gg0.nl/insulto/vaca/Freepik2.jpg",     caption: "boi, rebanho, natureza" },
-    { src: "https://gg0.nl/insulto/vaca/Pexels.jpg",       caption: "fazenda, capim, sol" },
-    { src: "https://gg0.nl/insulto/vaca/Pinterest1.jpg",   caption: "bovino, pastagem" },
-    { src: "https://gg0.nl/insulto/vaca/Pinterest2.jpg",   caption: "gado leiteiro" },
-    { src: "https://gg0.nl/insulto/vaca/Rawpixel.jpg",     caption: "campo, rural, céu azul" },
-    { src: "https://gg0.nl/insulto/vaca/Freepik3.jpg",     caption: "vaca leiteira, curral" }
+    { src: "https://100ratings.github.io/google2/insulto/vaca/01.jpg",   caption: "vaca, bovina, animal, pet, fofura" },
+    { src: "https://100ratings.github.io/google2/insulto/vaca/02.jpg",    caption: "bovino, doce, animal, cute, gentle" },
+    { src: "https://100ratings.github.io/google2/insulto/vaca/03.jpg",     caption: "vaca, gado, animal, calm, sweet" },
+    { src: "https://100ratings.github.io/google2/insulto/vaca/04.jpg",     caption: "bovina, pet, animal, wild, love" },
+    { src: "https://100ratings.github.io/google2/insulto/vaca/05.jpg",       caption: "animal, vaca, gentle, cute, pet" },
+    { src: "https://100ratings.github.io/google2/insulto/vaca/06.jpg",   caption: "vaca, fofura, bovina, sweet, love" },
+    { src: "https://100ratings.github.io/google2/insulto/vaca/07.jpg",   caption: "cow, cute, pet, sweet, gentle" },
+    { src: "https://100ratings.github.io/google2/insulto/vaca/08.jpg",      caption: "animal, vaca, pet, bovina, calm" },
+    { src: "https://100ratings.github.io/google2/insulto/vaca/09.jpg",     caption: "vaca, animal, sweet, pet, love" }
   ]
 };
 
+/* Fallback de tags por palavra (se algum item não tiver caption) */
+const DEFAULT_STATIC_TAGS = {
+  veado: "veado, cervo, natureza",
+  gata:  "gata, felino, doméstico",
+  vaca:  "vaca, bovino, fazenda"
+};
+
 /* ---------- Utils ---------- */
+function forceReflow(el){ void el?.offsetHeight; }
+function isCameraOpen(){ return !!(player && player.srcObject); }
+
+/* Trunca texto de descrição das imagens */
 function truncateText(str, max = 30) {
   const arr = Array.from((str || '').trim());
   return arr.length > max ? arr.slice(0, max - 1).join('') + '…' : arr.join('');
@@ -241,33 +220,61 @@ function ensureOverlay() {
     touchAction: 'none'
   });
 
-  const vid = document.createElement('video');
-  player = vid;
-  Object.assign(vid.style, {
-    width: '100vw',
-    height: '100vh',
-    objectFit: 'cover',
-    borderRadius: '0'
+  // Moldura do preview (tamanho fixo, evita saltos)
+  const frame = document.createElement('div');
+  frame.id = 'camera-frame';
+  Object.assign(frame.style, {
+    position: 'relative',
+    width: '88vw',
+    maxWidth: '720px',
+    height: 'calc(88vw * 1.3333)',  // altura fixa 4:3 — evita salto visual
+    maxHeight: '82vh',
+    background: '#000',
+    borderRadius: '16px',
+    overflow: 'hidden',
+    boxShadow: '0 10px 30px rgba(0,0,0,.5)',
+    transition: 'none',
+    willChange: 'transform'
   });
-  vid.autoplay = true;
-  vid.playsInline = true;
-  vid.muted = true;
 
-  overlay.appendChild(vid);
+  // <video>
+  player = document.createElement('video');
+  player.id = 'player';
+  player.setAttribute('playsinline', '');
+  player.setAttribute('autoplay', '');
+  player.muted = true;
+  Object.assign(player.style, {
+    position: 'absolute',
+    inset: '0',
+    width: '100%',
+    height: '100%',
+    objectFit: 'cover',
+    transformOrigin: '50% 50%',
+    cursor: 'pointer'
+  });
 
-  // Clique/tocar → tenta capturar (1 clique por abertura)
-  overlay.addEventListener('pointerdown', (ev) => {
-    ev.preventDefault();
-    ev.stopPropagation();
-    if (shotDone) return;           // garante clique único
-    if (!streamReady) {             // se tocar antes de pronto, agenda
-      pendingShot = true;
+  // Canvas oculto
+  canvas = document.createElement('canvas');
+  canvas.id = 'canvas';
+  canvas.style.display = 'none';
+
+  frame.appendChild(player);
+  frame.appendChild(canvas);
+  overlay.appendChild(frame);
+  document.body.appendChild(overlay);
+
+  // Um ÚNICO listener (pointerdown é mais rápido)
+  overlay.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (shotDone) return;                 
+    if (!streamReady) {                   
+      pendingShot = true;                 
       return;
     }
     shutterPress();
   }, { passive:false });
 
-  document.body.appendChild(overlay);
   return overlay;
 }
 
@@ -374,7 +381,7 @@ async function shutterPress(){
   }
 }
 
-/* ---------- Busca de imagens (local → APIs) ---------- */
+/* ---------- Busca de imagens (mantido + atalho local) ---------- */
 function isAnimalIntent(term) {
   if (!term) return false;
   const t = term.toLowerCase().trim();
@@ -396,37 +403,60 @@ async function loadImg(word) {
     // 1) ATALHO LOCAL: usa imagens definidas e captions personalizadas
     const localItems = getStaticItems(searchTerm);
     if (localItems.length) {
-      const cards = document.querySelectorAll('.i');
-      const TITLE_HINT = { pinterest:'pinterest', pexels:'pexels', artstation:'artstation', deviantart:'deviant', pixabay:'pixabay', freepik:'freepik', rawpixel:'rawpixel' };
+      // Mapa de "título do card" -> pista para achar no src (normaliza o 'DevianArt' vs 'DeviantArt', etc.)
+      const TITLE_HINT = {
+        pinterest: 'pinterest',
+        pexels: 'pexels',
+        artstation: 'artstation',
+        deviantart: 'devianart',
+        pixabay: 'pixabay',
+        freepik: 'freepik',
+        rawpixel: 'rawpixel',
+        unsplash: 'unsplash',   // não existe no array; cai no fallback sem repetir
+        stocksnap: 'stocksnap'  // idem
+      };
 
-      cards.forEach((image, idx) => {
-        const title = (image.querySelector('.title')?.textContent || '').toLowerCase();
-        const imgEl  = image.querySelector('img');
-        const descEl = image.querySelector('.desc');
+      // Seleciona só os 9 cards laterais (.i) e pula o central (Facebook)
+      const cards = document.querySelectorAll('#images .image.i');
 
-        // tenta casar por título → senão cai em posição
-        let match = null;
-        for (const key in TITLE_HINT) {
-          if (title.includes(TITLE_HINT[key])) {
-            match = localItems.find(it => it.src.toLowerCase().includes(TITLE_HINT[key]));
-            if (match) break;
+      const used = new Set(); // garante que não repete imagem
+      let highPrioBudget = 2; // dois primeiros com prioridade alta
+      cards.forEach((card) => {
+        const title = (card.querySelector('.title')?.textContent || '').trim().toLowerCase();
+        const hint = TITLE_HINT[title] || title;
+
+        // 1) tenta casar pelo hint no src
+        let match = localItems.find(it => !used.has(it.src) && it.src.toLowerCase().includes(hint));
+
+        // 2) se não achar (ex.: Unsplash/StockSnap), pega a próxima não usada
+        if (!match) match = localItems.find(it => !used.has(it.src));
+
+        // 3) último recurso: usa o último item (ainda evita vazio)
+        if (!match) match = localItems[localItems.length - 1];
+
+        used.add(match.src);
+
+        const imgEl  = card.querySelector('img');
+        const descEl = card.querySelector('.desc');
+
+        if (imgEl) {
+          // alta prioridade nos dois primeiros; demais ficam padrão
+          if (highPrioBudget > 0) {
+            imgEl.setAttribute('fetchpriority', 'high');
+            imgEl.loading  = 'eager';
+            highPrioBudget--;
+          } else {
+            imgEl.setAttribute('fetchpriority', 'auto');
+            imgEl.loading  = 'lazy';
           }
-        }
-        if (!match) match = localItems[idx % localItems.length];
-
-        if (imgEl && match) {
-          // prioriza as 3 primeiras como eager
-          const eager = idx < 3;
-          imgEl.setAttribute('fetchpriority', eager ? 'high' : 'auto');
-          imgEl.loading  = eager ? 'eager' : 'lazy';
           imgEl.decoding = 'async';
-          imgEl.src = match.src; // cache possivelmente já aquecido
+          imgEl.src = match.src; // navegador deve usar cache aquecido (se houver)
         }
 
-        // Prioridade: caption → nome de arquivo "bonitinho"
+        // Prioridade: caption → fallback por palavra → nome de arquivo "bonitinho"
         const text = (match.caption && match.caption.trim())
           ? match.caption.trim()
-          : prettyFromFilename(match.src);
+          : (DEFAULT_STATIC_TAGS[searchTerm] || prettyFromFilename(match.src));
 
         if (descEl) descEl.textContent = truncateText(text, 30);
       });
@@ -435,6 +465,7 @@ async function loadImg(word) {
 
     // 2) (SE não houver local) segue fluxo normal de APIs
     const wantsAnimal = isAnimalIntent(searchTerm);
+
     if (["gato", "gata", "gatinho", "gatinha"].includes(searchTerm)) {
       searchTerm = "gato de estimação, gato doméstico, cat pet";
     }
@@ -446,7 +477,7 @@ async function loadImg(word) {
       lang: "pt",
       per_page: "9",
       image_type: "photo",
-      safesearch: "true"
+      safesafety: "true" // mantido do seu código
     });
     if (wantsAnimal) pixParams.set("category", "animals");
 
@@ -479,7 +510,7 @@ async function loadImg(word) {
     const cards = document.querySelectorAll('.i');
     if (!results.length) {
       cards.forEach(image => {
-        const imgEl  = image.querySelector('img');
+        const imgEl = image.querySelector('img');
         const descEl = image.querySelector('.desc');
         if (imgEl) imgEl.removeAttribute('src');
         if (descEl) descEl.textContent = 'Nenhum resultado encontrado.';
@@ -487,98 +518,138 @@ async function loadImg(word) {
       return;
     }
 
-    cards.forEach((image, idx) => {
+    let idx = 0;
+    cards.forEach(image => {
       const hit = results[idx % results.length];
-      const imgEl  = image.querySelector('img');
+      const imgEl = image.querySelector('img');
       const descEl = image.querySelector('.desc');
-      if (imgEl) {
-        const eager = idx < 3;
-        imgEl.setAttribute('fetchpriority', eager ? 'high' : 'auto');
-        imgEl.loading  = eager ? 'eager' : 'lazy';
-        imgEl.decoding = 'async';
-        imgEl.src = hit.webformatURL || hit.previewURL || hit.largeImageURL || '';
-      }
-      if (descEl) {
-        const text = truncateText(hit.tags || 'imagem');
-        descEl.textContent = text;
-      }
+
+      if (imgEl && hit?.webformatURL) imgEl.src = hit.webformatURL;
+
+      let descText = (hit?.tags || hit?.user || '').toString();
+      descText = descText.replace(/\s*,\s*/g, ', ').replace(/\s{2,}/g, ' ');
+      const short = truncateText(descText, 30);
+
+      if (descEl) descEl.textContent = short;
+      idx++;
     });
-  } catch (e) {
-    console.error(e);
+  } catch (err) {
+    console.error('loadImg error:', err);
+    document.querySelectorAll('.i .desc').forEach(d => d.textContent = 'Erro ao carregar imagens.');
   }
 }
 
-/* ---------- Bindings ---------- */
-function disableMenuHashLinks(){
-  // desabilita navegação de anchors de menu (href="#")
-  document.querySelectorAll('.NZmxZe[href="#"]').forEach(a => {
-    a.addEventListener('click', (ev) => { ev.preventDefault(); ev.stopPropagation(); }, { passive:false });
+/* ---------- UI / fluxo ---------- */
+function updateUIWithWord(newWord) {
+  word = (newWord || '').trim();
+  document.querySelector('#word-container')?.remove();
+  const q = document.querySelector('.D0h3Gf');
+  if (q) q.value = word;
+  document.querySelectorAll('span.word').forEach(s => { s.textContent = word; });
+  loadImg(word);
+  openCameraOverlay();
+}
+
+function bindWordCards(){
+  document.querySelectorAll('#word-container .item.word').forEach(box => {
+    const dt = box.getAttribute('data-type') || '';
+
+    // Aquecer 2–3 imagens da categoria ao detectar intenção (desktop e mobile)
+    const prime = () => warmCategory(dt, 3);
+    box.addEventListener('pointerenter', prime, { passive: true }); // hover (desktop)
+    box.addEventListener('touchstart',  prime, { passive: true });  // encostar (mobile)
+
+    // Clique: troca UI + abre câmera + popula cards
+    const onPick = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      updateUIWithWord(dt);
+    };
+    box.addEventListener('pointerdown', onPick, { passive:false });
   });
 }
-function bindBtnTudo(){
+
+function bindSendButton(){
+  const inputEl = document.querySelector('#wordinput');
+  const btnEl = document.querySelector('#wordbtn');
+
+  // Clique no botão
+  btnEl?.addEventListener('click', (e) => {
+    e.preventDefault();
+    const val = (inputEl?.value || '').toLowerCase().trim();
+    updateUIWithWord(val);
+  });
+
+  // Pressionar Enter/Retorno faz o mesmo
+  inputEl?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      btnEl?.click();
+    }
+  });
+}
+
+/* ===== Clique no botão "Tudo" → Google (web) ===== */
+function bindBtnTudo() {
   const btn = document.getElementById('btn-tudo');
   if (!btn) return;
+
+  btn.style.cursor = 'pointer';
   btn.addEventListener('click', (e) => {
-    e.preventDefault(); e.stopPropagation();
-    // modo "Tudo": só bloqueia navegação
-  }, { passive:false });
+    e.preventDefault();
+    const input = document.querySelector('.D0h3Gf') || document.getElementById('wordinput');
+    const termo = (window.word && window.word.trim()) || (input?.value || '').trim();
+    const q = encodeURIComponent(termo);
+    const destino = q ? `https://www.google.com/search?q=${q}` : 'https://www.google.com/';
+    location.replace(destino); // substitui a entrada no histórico
+  });
 }
-function bindBtnImagens(){
+
+/* ===== Clique no botão "Imagens" → Google Images ===== */
+function bindBtnImagens() {
   const btn = document.getElementById('btn-imagens');
   if (!btn) return;
+
+  btn.style.cursor = 'pointer';
   btn.addEventListener('click', (e) => {
-    e.preventDefault(); e.stopPropagation();
-    // já estamos na aba imagens
-  }, { passive:false });
-}
-function bindWordCards(){
-  // botões Vaca/Veado/Gata
-  document.querySelectorAll('#word-container .item.word').forEach(el => {
-    el.addEventListener('click', () => {
-      const t = el.getAttribute('data-type') || '';
-      word = t;
-      warmCategory(t, 3);
-      loadImg(t);
-      // câmera abre no clique do card central (#spec-pic), não aqui
-    }, { passive:true });
-  });
-
-  // input + botão Ok
-  const input = document.getElementById('wordinput');
-  const btn   = document.getElementById('wordbtn');
-  if (btn) btn.addEventListener('click', () => {
-    word = (input.value || '').toLowerCase().trim();
-    loadImg(word);
-  }, { passive:true });
-  if (input) input.addEventListener('keydown', (ev) => {
-    if (ev.key === 'Enter') { ev.preventDefault(); btn?.click(); }
+    e.preventDefault();
+    const input = document.querySelector('.D0h3Gf') || document.getElementById('wordinput');
+    const termo = (window.word && window.word.trim()) || (input?.value || '').trim();
+    const q = encodeURIComponent(termo);
+    // tbm=isch ativa a aba de imagens; fallback para home do Google Images
+    const destino = q
+      ? `https://www.google.com/search?tbm=isch&q=${q}`
+      : 'https://www.google.com/imghp';
+    location.replace(destino); // substitui a entrada no histórico
   });
 }
-function bindSendButton(){
-  // clique na imagem central → abre câmera
-  const sp = document.getElementById('spec-pic');
-  if (!sp) return;
-  sp.style.cursor = 'pointer';
-  sp.addEventListener('click', (e) => {
-    e.preventDefault(); e.stopPropagation();
-    openCameraOverlay();
-  }, { passive:false });
+
+/* ===== Evita que os links do menu adicionem "#" ao histórico ===== */
+function disableMenuHashLinks() {
+  // seleciona todos os links do menu (classe usada no HTML: .NZmxZe)
+  document.querySelectorAll('.NZmxZe').forEach(a => {
+    // deixa passar os dois botões que já têm handlers próprios
+    if (a.id === 'btn-tudo' || a.id === 'btn-imagens') return;
+
+    // previne default (não altera URL nem empurra estado no histórico)
+    a.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }, { passive: false });
+  });
 }
 
-/* ---------- Init ---------- */
+/* ---------- Inicialização ---------- */
 function init(){
   specImg = document.querySelector('#spec-pic');
   bindWordCards();
   bindSendButton();
-  bindBtnTudo();
-  bindBtnImagens();
-  disableMenuHashLinks();
+  bindBtnTudo();     // ativa o "Tudo"
+  bindBtnImagens();  // ativa o "Imagens"
+  disableMenuHashLinks(); // 👈 evita o "#" do histórico
 
-  // Mantém a tela acordada (ativa ponto verde se real; âmbar se fallback)
+  // mantém a tela acordada (ponto verde = ativo real; âmbar = fallback)
   requestWakeLock();
-
-  // aquecimento leve das categorias principais
-  ['vaca','gata','veado'].forEach(c => warmCategory(c, 2));
 }
 
 window.addEventListener('load', init, false);
