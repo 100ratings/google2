@@ -134,41 +134,48 @@ function ensureSpecPlaceholder() {
 }
 
 /* =======================================================================
-   Click Shield global — bloqueia qualquer clique por baixo do overlay
+   Click Shield global — bloqueia cliques por baixo, mas deixa o overlay clicar
    ======================================================================= */
 let _shieldOn = false;
 
 function _eatClicks(e){
-  // Usa a classe do <body> como "fonte da verdade"
-  if (document.body.classList.contains('show-cam')) {
-    e.stopPropagation();
-    e.preventDefault();
-  }
+  if (!document.body.classList.contains('show-cam')) return;
+
+  // Se o clique foi dentro do overlay (ou em algum filho), deixe passar
+  if (overlay && overlay.contains(e.target)) return;
+
+  // Fora do overlay? Bloqueia.
+  e.stopPropagation();
+  e.preventDefault();
 }
 
 function installClickShield(){
   if (_shieldOn) return;
   _shieldOn = true;
-  // Captura amplo (desktop + mobile), cobrindo sequências que geram clique fantasma
-  document.addEventListener('pointerdown', _eatClicks, true);
-  document.addEventListener('pointerup',   _eatClicks, true);
-  document.addEventListener('click',       _eatClicks, true);
-  document.addEventListener('mousedown',   _eatClicks, true);
-  document.addEventListener('mouseup',     _eatClicks, true);
-  document.addEventListener('touchstart',  _eatClicks, true);
-  document.addEventListener('touchend',    _eatClicks, true);
+
+  // Captura amplo (desktop + mobile)
+  const opts = true;
+  document.addEventListener('pointerdown', _eatClicks, opts);
+  document.addEventListener('pointerup',   _eatClicks, opts);
+  document.addEventListener('click',       _eatClicks, opts);
+  document.addEventListener('mousedown',   _eatClicks, opts);
+  document.addEventListener('mouseup',     _eatClicks, opts);
+  document.addEventListener('touchstart',  _eatClicks, opts);
+  document.addEventListener('touchend',    _eatClicks, opts);
 }
 
 function removeClickShield(){
   if (!_shieldOn) return;
   _shieldOn = false;
-  document.removeEventListener('pointerdown', _eatClicks, true);
-  document.removeEventListener('pointerup',   _eatClicks, true);
-  document.removeEventListener('click',       _eatClicks, true);
-  document.removeEventListener('mousedown',   _eatClicks, true);
-  document.removeEventListener('mouseup',     _eatClicks, true);
-  document.removeEventListener('touchstart',  _eatClicks, true);
-  document.removeEventListener('touchend',    _eatClicks, true);
+
+  const opts = true;
+  document.removeEventListener('pointerdown', _eatClicks, opts);
+  document.removeEventListener('pointerup',   _eatClicks, opts);
+  document.removeEventListener('click',       _eatClicks, opts);
+  document.removeEventListener('mousedown',   _eatClicks, opts);
+  document.removeEventListener('mouseup',     _eatClicks, opts);
+  document.removeEventListener('touchstart',  _eatClicks, opts);
+  document.removeEventListener('touchend',    _eatClicks, opts);
 }
 
 /* ---------- Overlay da câmera (fora do div) ---------- */
@@ -612,4 +619,5 @@ function init(){
 }
 
 window.addEventListener('load', init, false);
+
 
