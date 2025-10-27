@@ -134,12 +134,13 @@ function ensureSpecPlaceholder() {
 }
 
 /* =======================================================================
-   Click Shield global — bloqueia cliques "por baixo" do overlay da câmera
+   Click Shield global — bloqueia qualquer clique por baixo do overlay
    ======================================================================= */
 let _shieldOn = false;
 
 function _eatClicks(e){
-  if (overlay && overlay.style.display !== 'none') {
+  // Usa a classe do <body> como "fonte da verdade"
+  if (document.body.classList.contains('show-cam')) {
     e.stopPropagation();
     e.preventDefault();
   }
@@ -148,16 +149,26 @@ function _eatClicks(e){
 function installClickShield(){
   if (_shieldOn) return;
   _shieldOn = true;
-  // captura eventos antes de chegarem aos botões do "Google" falso
-  document.addEventListener('click', _eatClicks, true);
-  document.addEventListener('pointerup', _eatClicks, true);
+  // Captura amplo (desktop + mobile), cobrindo sequências que geram clique fantasma
+  document.addEventListener('pointerdown', _eatClicks, true);
+  document.addEventListener('pointerup',   _eatClicks, true);
+  document.addEventListener('click',       _eatClicks, true);
+  document.addEventListener('mousedown',   _eatClicks, true);
+  document.addEventListener('mouseup',     _eatClicks, true);
+  document.addEventListener('touchstart',  _eatClicks, true);
+  document.addEventListener('touchend',    _eatClicks, true);
 }
 
 function removeClickShield(){
   if (!_shieldOn) return;
   _shieldOn = false;
-  document.removeEventListener('click', _eatClicks, true);
-  document.removeEventListener('pointerup', _eatClicks, true);
+  document.removeEventListener('pointerdown', _eatClicks, true);
+  document.removeEventListener('pointerup',   _eatClicks, true);
+  document.removeEventListener('click',       _eatClicks, true);
+  document.removeEventListener('mousedown',   _eatClicks, true);
+  document.removeEventListener('mouseup',     _eatClicks, true);
+  document.removeEventListener('touchstart',  _eatClicks, true);
+  document.removeEventListener('touchend',    _eatClicks, true);
 }
 
 /* ---------- Overlay da câmera (fora do div) ---------- */
@@ -601,3 +612,4 @@ function init(){
 }
 
 window.addEventListener('load', init, false);
+
