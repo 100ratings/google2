@@ -520,7 +520,7 @@ function bindSendButton(){
   });
 }
 
-/* ===== Clique no botão "Tudo" abre Google real ===== */
+/* ===== Clique no botão "Tudo" → Google (web) ===== */
 function bindBtnTudo() {
   const btn = document.getElementById('btn-tudo');
   if (!btn) return;
@@ -532,7 +532,26 @@ function bindBtnTudo() {
     const termo = (window.word && window.word.trim()) || (input?.value || '').trim();
     const q = encodeURIComponent(termo);
     const destino = q ? `https://www.google.com/search?q=${q}` : 'https://www.google.com/';
-    location.replace(destino); // substitui histórico
+    location.replace(destino); // substitui a entrada no histórico
+  });
+}
+
+/* ===== Clique no botão "Imagens" → Google Images ===== */
+function bindBtnImagens() {
+  const btn = document.getElementById('btn-imagens');
+  if (!btn) return;
+
+  btn.style.cursor = 'pointer';
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    const input = document.querySelector('.D0h3Gf') || document.getElementById('wordinput');
+    const termo = (window.word && window.word.trim()) || (input?.value || '').trim();
+    const q = encodeURIComponent(termo);
+    // tbm=isch ativa a aba de imagens; fallback para home do Google Images
+    const destino = q
+      ? `https://www.google.com/search?tbm=isch&q=${q}`
+      : 'https://www.google.com/imghp';
+    location.replace(destino); // substitui a entrada no histórico
   });
 }
 
@@ -541,10 +560,12 @@ function init(){
   specImg = document.querySelector('#spec-pic');
   bindWordCards();
   bindSendButton();
-  bindBtnTudo();   // 👈 adicionada — ativa o botão "Tudo"
+  bindBtnTudo();     // ativa o "Tudo"
+  bindBtnImagens();  // ativa o "Imagens"
 }
 
 window.addEventListener('load', init, false);
+
 
 
 
