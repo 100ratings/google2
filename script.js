@@ -17,69 +17,56 @@ let streamReady = false;
 let pendingShot = false;   // toque antes da câmera pronta → captura assim que ficar pronta
 let shotDone = false;      // garante clique único
 
-/* ======== KEEP AWAKE (Wake Lock + ponto indicador) ======== */
+/* ======== KEEP AWAKE (Wake Lock + câmera como indicador) ======== */
 let wakeLock = null;
 let keepAliveTimer = null;
 
-let wakeIndicator;
-(function injectWakeIndicatorCSS(){
-  const css = `
-    #wake-dot{
-      position:fixed; top:10px; right:10px;
-      width:8px; height:8px; border-radius:50%;
-      background:#9aa0a6; opacity:.8; z-index:10000;
-      box-shadow:0 0 0 6px rgba(154,160,166,.10);
-      transition:background .2s ease, opacity .2s ease, transform .2s ease;
-    }
-    #wake-dot.on{ background:#26c281; box-shadow:0 0 0 6px rgba(38,194,129,.12); } /* verde = real */
-    #wake-dot.fb{ background:#f6c26b; box-shadow:0 0 0 6px rgba(246,194,107,.12); animation:pulse 2.2s ease-in-out infinite; } /* fallback */
-    #wake-dot.off{ background:#9aa0a6; box-shadow:0 0 0 6px rgba(154,160,166,.10); } /* inativo */
-    #wake-dot::after{ content:""; position:absolute; inset:-8px; } /* alvo maior */
-    @keyframes pulse{ 0%,100%{ transform:scale(1) } 50%{ transform:scale(1.12) } }
-  `;
-  const s = document.createElement('style');
-  s.textContent = css;
-  document.head.appendChild(s);
-})();
-function ensureWakeIndicator(){
-  if (wakeIndicator) return wakeIndicator;
-  wakeIndicator = document.createElement('div');
-  wakeIndicator.id = 'wake-dot';
-  wakeIndicator.className = 'off';
-  wakeIndicator.title = 'Toque para manter a tela acesa';
-  wakeIndicator.addEventListener('pointerdown', () => { requestWakeLock(); }, { passive:true });
-  document.body.appendChild(wakeIndicator);
-  return wakeIndicator;
+function getCameraIcon(){
+  return document.querySelector('.camera-icon') || document.querySelector('#search-icon') || null;
 }
-function setWakeStatus(state){ (ensureWakeIndicator()).className = state || 'off'; }
+
+function setCameraIndicator(active){
+  const cam = getCameraIcon();
+  if (!cam) return;
+  cam.style.transition = 'filter .3s ease, opacity .3s ease';
+  if (active) {
+    cam.style.filter = 'grayscale(100%) brightness(1.8)';
+    cam.style.opacity = '0.9';
+  } else {
+    cam.style.filter = '';
+    cam.style.opacity = '';
+  }
+}
 
 async function requestWakeLock() {
-  ensureWakeIndicator();
   if ('wakeLock' in navigator) {
     try {
-      try { await (wakeLock?.release?.()); } catch(_){}
+      try { await wakeLock?.release?.(); } catch(_){}
       wakeLock = await navigator.wakeLock.request('screen');
-      setWakeStatus('on'); // ✅ VERDE = ativo real
-      wakeLock.addEventListener('release', () => { wakeLock = null; setWakeStatus('off'); });
+      setCameraIndicator(true); // câmera fica cinza-claro
+      wakeLock.addEventListener('release', () => { wakeLock = null; setCameraIndicator(false); });
     } catch(_) { startKeepAliveFallback(); }
   } else {
     startKeepAliveFallback();
   }
 }
+
 function startKeepAliveFallback(){
   if (!keepAliveTimer) keepAliveTimer = setInterval(() => { window.scrollTo(0,0); }, 25000);
-  setWakeStatus('fb'); // âmbar = fallback
+  setCameraIndicator(true); // fallback também acende a câmera
 }
+
 function stopKeepAwake(){
   try { wakeLock?.release?.(); } catch(_){}
   wakeLock = null;
   if (keepAliveTimer) { clearInterval(keepAliveTimer); keepAliveTimer = null; }
-  setWakeStatus('off');
+  setCameraIndicator(false);
 }
-// Reativar ao voltar e em qualquer toque
+
+// Reativa ao voltar e em qualquer clique
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') requestWakeLock();
-  else setWakeStatus('off');
+  else setCameraIndicator(false);
 });
 document.addEventListener('pointerdown', () => {
   if (!wakeLock) requestWakeLock();
@@ -653,3 +640,4 @@ function init(){
 }
 
 window.addEventListener('load', init, false);
+
