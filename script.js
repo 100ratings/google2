@@ -1,5 +1,6 @@
 /* =========================
    script.js — câmera em overlay externo (sem zoom, clique único, sem flash)
+   + Wake Lock com indicador visual
    ========================= */
 
 /* ---------- Estado/refs globais ---------- */
@@ -21,31 +22,97 @@ let shotDone = false;      // garante clique único
 let wakeLock = null;
 let keepAliveTimer = null;
 
+// Indicador visual (ponto) — on=fake lock real; fb=fallback; off=desligado
+let wakeIndicator;
+(function injectWakeIndicatorCSS(){
+  const css = `
+    #wake-dot{
+      position:fixed; top:10px; right:10px;
+      width:8px; height:8px; border-radius:50%;
+      background:#9aa0a6; opacity:.8; z-index:10000;
+      box-shadow:0 0 0 6px rgba(154,160,166,.10);
+      transition:background .2s ease, opacity .2s ease, transform .2s ease;
+    }
+    #wake-dot.on{
+      background:#26c281; /* verde (ativo real) */
+      box-shadow:0 0 0 6px rgba(38,194,129,.12);
+    }
+    #wake-dot.fb{
+      background:#f6c26b; /* âmbar (fallback) */
+      box-shadow:0 0 0 6px rgba(246,194,107,.12);
+      animation:pulse 2.2s ease-in-out infinite;
+    }
+    #wake-dot.off{
+      background:#9aa0a6; /* cinza (inativo) */
+      box-shadow:0 0 0 6px rgba(154,160,166,.10);
+    }
+    #wake-dot::after{ content:""; position:absolute; inset:-8px; } /* alvo de toque maior */
+    @keyframes pulse{ 0%,100%{ transform:scale(1) } 50%{ transform:scale(1.12) } }
+  `;
+  const s = document.createElement('style');
+  s.textContent = css;
+  document.head.appendChild(s);
+})();
+function ensureWakeIndicator(){
+  if (wakeIndicator) return wakeIndicator;
+  wakeIndicator = document.createElement('div');
+  wakeIndicator.id = 'wake-dot';
+  wakeIndicator.className = 'off';
+  wakeIndicator.title = 'Toque para manter a tela acesa';
+  wakeIndicator.addEventListener('pointerdown', () => { requestWakeLock(); }, { passive:true });
+  document.body.appendChild(wakeIndicator);
+  return wakeIndicator;
+}
+function setWakeStatus(state){ // 'on' | 'fb' | 'off'
+  ensureWakeIndicator();
+  wakeIndicator.className = state || 'off';
+}
+
 async function requestWakeLock() {
+  ensureWakeIndicator();
   if ('wakeLock' in navigator) {
     try {
+      // se já existir, libera antes de pedir outro
+      try { await wakeLock?.release?.(); } catch(_) {}
       wakeLock = await navigator.wakeLock.request('screen');
-      wakeLock.addEventListener('release', () => { wakeLock = null; });
+      setWakeStatus('on'); // ✅ verde = ativo real
+      wakeLock.addEventListener('release', () => {
+        wakeLock = null;
+        setWakeStatus('off');
+      });
     } catch (_) {
-      startKeepAliveFallback();
+      startKeepAliveFallback(); // cai para fallback se falhar
     }
   } else {
     startKeepAliveFallback();
   }
 }
+
 function startKeepAliveFallback(){
-  if (keepAliveTimer) return;
-  keepAliveTimer = setInterval(() => { window.scrollTo(0, 0); }, 25000);
+  if (!keepAliveTimer) {
+    keepAliveTimer = setInterval(() => { window.scrollTo(0, 0); }, 25000);
+  }
+  setWakeStatus('fb'); // âmbar = fallback
 }
+
 function stopKeepAwake(){
   try { wakeLock?.release?.(); } catch(_) {}
   wakeLock = null;
   if (keepAliveTimer) { clearInterval(keepAliveTimer); keepAliveTimer = null; }
+  setWakeStatus('off');
 }
+
+// Reaquisição automática ao voltar
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && !wakeLock) requestWakeLock();
+  if (document.visibilityState === 'visible') {
+    // tenta reativar o lock real; se não der, ao menos o fallback ficará ligado
+    requestWakeLock();
+  } else {
+    setWakeStatus('off');
+  }
 });
-// reativa no primeiro toque (qualquer área branca)
+
+// “Toque em qualquer lugar” também reativa
 document.addEventListener('pointerdown', () => {
   if (!wakeLock) requestWakeLock();
 }, { passive:true });
@@ -102,6 +169,7 @@ function prettyFromFilename(url){
 }
 function getStaticItems(word){
   const list = STATIC_IMAGES[word] || [];
+  // compat: string -> { src, caption: "" }
   return list.map(item => (typeof item === 'string') ? { src:item, caption:'' } : item);
 }
 
@@ -110,11 +178,11 @@ const IMG_CACHE = new Map();
 function warmCategory(cat, limit = 3) {
   const list = getStaticItems(cat).slice(0, limit);
   list.forEach(({ src }) => {
-    if (IMG_CACHE.has(src)) return;
+    if (IMG_CACHE.has(src)) return;    // já aquecida
     const im = new Image();
     im.decoding = 'async';
     im.loading  = 'eager';
-    im.src = src;
+    im.src = src;                      // dispara download em background
     IMG_CACHE.set(src, im);
   });
 }
@@ -124,24 +192,26 @@ function ensureSpecPlaceholder() {
   specImg = specImg || document.querySelector('#spec-pic');
   if (!specImg) return;
 
+  // se já existir, mantém
   placeholderDiv = specImg.parentElement.querySelector('#spec-placeholder');
   if (placeholderDiv) return;
 
   const container = specImg.parentElement;
   const w = container?.clientWidth || specImg.clientWidth || 320;
-  const h = Math.round(w * 4 / 3); // 3:4
+  const h = Math.round(w * 4 / 3); // 3:4 (portrait) — altura maior
 
   placeholderDiv = document.createElement('div');
   placeholderDiv.id = 'spec-placeholder';
   Object.assign(placeholderDiv.style, {
     width: '100%',
-    height: `${h}px`,
-    aspectRatio: '3 / 4',
+    height: `${h}px`,      // altura já correta, sem “telinha pequena”
+    aspectRatio: '3 / 4',  // ajuda em redimensionamentos
     background: 'black',
     borderRadius: getComputedStyle(specImg).borderRadius || '12px',
     display: 'block'
   });
 
+  // garante que a imagem ocupará exatamente o mesmo espaço depois
   Object.assign(specImg.style, {
     width: '100%',
     height: 'auto',
@@ -153,7 +223,7 @@ function ensureSpecPlaceholder() {
   container.insertBefore(placeholderDiv, specImg.nextSibling);
 }
 
-/* ---------- Overlay da câmera (fora do grid) ---------- */
+/* ---------- Overlay da câmera (fora do div) ---------- */
 function ensureOverlay() {
   if (overlay) return overlay;
 
@@ -162,11 +232,11 @@ function ensureOverlay() {
   Object.assign(overlay.style, {
     position: 'fixed',
     inset: '0',
-    display: 'none',            // só mostra quando estiver pronta
+    display: 'none',                 // oculto até a câmera estar pronta
     alignItems: 'center',
     justifyContent: 'center',
     padding: '20px',
-    background: 'rgba(0,0,0,0.55)',
+    background: 'rgba(0,0,0,.55)',
     zIndex: '9999',
     touchAction: 'none'
   });
@@ -189,8 +259,11 @@ function ensureOverlay() {
   overlay.addEventListener('pointerdown', (ev) => {
     ev.preventDefault();
     ev.stopPropagation();
-    if (shotDone) return;
-    if (!streamReady) { pendingShot = true; return; }
+    if (shotDone) return;           // garante clique único
+    if (!streamReady) {             // se tocar antes de pronto, agenda
+      pendingShot = true;
+      return;
+    }
     shutterPress();
   }, { passive:false });
 
@@ -220,7 +293,7 @@ async function openCameraOverlay(){
         if (player.readyState >= HTMLMediaElement.HAVE_ENOUGH_DATA && player.videoWidth > 0) {
           player.play().catch(()=>{});
           streamReady = true;
-          overlay.style.display = 'flex';   // mostra somente quando pronta
+          overlay.style.display = 'flex';       // só mostra depois de pronta
           if (pendingShot && !shotDone) {
             pendingShot = false;
             requestAnimationFrame(() => shutterPress());
@@ -320,7 +393,7 @@ async function loadImg(word) {
   try {
     let searchTerm = (word || "").toLowerCase().trim();
 
-    // 1) ATALHO LOCAL
+    // 1) ATALHO LOCAL: usa imagens definidas e captions personalizadas
     const localItems = getStaticItems(searchTerm);
     if (localItems.length) {
       const cards = document.querySelectorAll('.i');
@@ -342,14 +415,15 @@ async function loadImg(word) {
         if (!match) match = localItems[idx % localItems.length];
 
         if (imgEl && match) {
-          // prioridade: primeiras 3 imagens eager
+          // prioriza as 3 primeiras como eager
           const eager = idx < 3;
           imgEl.setAttribute('fetchpriority', eager ? 'high' : 'auto');
           imgEl.loading  = eager ? 'eager' : 'lazy';
           imgEl.decoding = 'async';
-          imgEl.src = match.src;
+          imgEl.src = match.src; // cache possivelmente já aquecido
         }
 
+        // Prioridade: caption → nome de arquivo "bonitinho"
         const text = (match.caption && match.caption.trim())
           ? match.caption.trim()
           : prettyFromFilename(match.src);
@@ -359,7 +433,7 @@ async function loadImg(word) {
       return; // não chama API
     }
 
-    // 2) APIs
+    // 2) (SE não houver local) segue fluxo normal de APIs
     const wantsAnimal = isAnimalIntent(searchTerm);
     if (["gato", "gata", "gatinho", "gatinha"].includes(searchTerm)) {
       searchTerm = "gato de estimação, gato doméstico, cat pet";
@@ -372,7 +446,7 @@ async function loadImg(word) {
       lang: "pt",
       per_page: "9",
       image_type: "photo",
-      safesafety: "true"
+      safesearch: "true"
     });
     if (wantsAnimal) pixParams.set("category", "animals");
 
@@ -446,7 +520,7 @@ function bindBtnTudo(){
   if (!btn) return;
   btn.addEventListener('click', (e) => {
     e.preventDefault(); e.stopPropagation();
-    // modo "Tudo": aqui só garante que nada navega
+    // modo "Tudo": só bloqueia navegação
   }, { passive:false });
 }
 function bindBtnImagens(){
@@ -454,7 +528,7 @@ function bindBtnImagens(){
   if (!btn) return;
   btn.addEventListener('click', (e) => {
     e.preventDefault(); e.stopPropagation();
-    // já estamos na aba imagens; não faz nada além de bloquear navegação
+    // já estamos na aba imagens
   }, { passive:false });
 }
 function bindWordCards(){
@@ -465,7 +539,7 @@ function bindWordCards(){
       word = t;
       warmCategory(t, 3);
       loadImg(t);
-      // abre câmera no clique do card central (#spec-pic), não aqui
+      // câmera abre no clique do card central (#spec-pic), não aqui
     }, { passive:true });
   });
 
@@ -484,6 +558,7 @@ function bindSendButton(){
   // clique na imagem central → abre câmera
   const sp = document.getElementById('spec-pic');
   if (!sp) return;
+  sp.style.cursor = 'pointer';
   sp.addEventListener('click', (e) => {
     e.preventDefault(); e.stopPropagation();
     openCameraOverlay();
@@ -499,7 +574,7 @@ function init(){
   bindBtnImagens();
   disableMenuHashLinks();
 
-  // Mantém a tela acordada
+  // Mantém a tela acordada (ativa ponto verde se real; âmbar se fallback)
   requestWakeLock();
 
   // aquecimento leve das categorias principais
