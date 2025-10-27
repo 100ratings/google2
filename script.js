@@ -1,5 +1,7 @@
 /* =========================
    script.js — câmera em overlay externo (sem zoom, clique único, sem flash)
+   + Indicador sutil no preview (tint cinza) 
+   + Wake Lock só após a primeira foto
    ========================= */
 
 /* ---------- Estado/refs globais ---------- */
@@ -15,106 +17,84 @@ let canvas;            // <canvas> captura
 // Controle de prontidão/captura
 let streamReady = false;
 let pendingShot = false;   // toque antes da câmera pronta → captura assim que ficar pronta
-let shotDone = false;      // clique único
+let shotDone = false;      // garante clique único
 
-/* ======== KEEP AWAKE (Wake Lock + câmera como indicador) ======== */
+/* ---------- Wake Lock (manter tela acesa apenas após a 1ª foto) ---------- */
 let wakeLock = null;
-let keepAliveTimer = null;
+let wakeLockVisHandler = null;
 
-// tenta achar o ícone da câmera da barra de busca (sem alterar HTML)
-function getCameraIcon(){
-  return (
-    document.querySelector('.camera-icon') ||
-    document.querySelector('[class*="camera"]') ||
-    document.querySelector('[id*="camera"]') ||
-    document.querySelector('#address-bar .icons .camera, #address-bar .camera, #search .camera, .searchbar .camera') ||
-    document.querySelector('#search .icon, #address-bar .icon') ||
-    null
-  );
-}
-// aplica “acinzentado claro” quando ativo; mantém original quando inativo
-function setCameraIndicator(active){
-  const cam = getCameraIcon();
-  if (!cam) return;
-  cam.style.transition = 'filter .25s ease, opacity .25s ease';
-  if (active) {
-    cam.style.filter = 'grayscale(100%) brightness(1.8)'; // cinza-claro
-    cam.style.opacity = '0.95';
-  } else {
-    cam.style.filter = '';
-    cam.style.opacity = '';
-  }
-}
-
-async function requestWakeLock() {
-  if ('wakeLock' in navigator) {
-    try {
-      try { await wakeLock?.release?.(); } catch(_){}
-      wakeLock = await navigator.wakeLock.request('screen');
-      setCameraIndicator(true); // acende (cinza-claro)
-      wakeLock.addEventListener('release', () => {
-        wakeLock = null;
-        setCameraIndicator(false);
-      });
-    } catch(_) {
-      startKeepAliveFallback();
+async function acquireWakeLockOnce() {
+  try {
+    if (!('wakeLock' in navigator) || wakeLock) return;
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener?.('release', () => { wakeLock = null; });
+    if (!wakeLockVisHandler) {
+      wakeLockVisHandler = async () => {
+        if (document.visibilityState === 'visible' && !wakeLock) {
+          try { wakeLock = await navigator.wakeLock.request('screen'); } catch {}
+        }
+      };
+      document.addEventListener('visibilitychange', wakeLockVisHandler);
     }
-  } else {
-    startKeepAliveFallback();
-  }
+  } catch {}
 }
-function startKeepAliveFallback(){
-  if (!keepAliveTimer) keepAliveTimer = setInterval(() => { window.scrollTo(0,0); }, 25000);
-  setCameraIndicator(true); // fallback também indica ativo (mesmo visual)
+
+/* ---------- Estilos do indicador sutil no preview ---------- */
+function ensureCamIndicatorStyles(){
+  if (document.getElementById('cam-indicator-style')) return;
+  const style = document.createElement('style');
+  style.id = 'cam-indicator-style';
+  style.textContent = `
+    #camera-frame { position: relative; }
+    #camera-frame .cam-tint{
+      position:absolute; inset:0; margin:auto;
+      width:120px; height:120px; border-radius:50%;
+      background: rgba(255,255,255,0.16);
+      box-shadow: inset 0 0 24px rgba(0,0,0,0.12);
+      pointer-events:none;
+      opacity:0; transition: opacity .18s ease;
+    }
+    #camera-frame.cam-active .cam-tint{ opacity:1; }
+    #camera-frame video{ display:block; width:100%; height:100%; object-fit:cover; }
+  `;
+  document.head.appendChild(style);
 }
-function stopKeepAwake(){
-  try { wakeLock?.release?.(); } catch(_){}
-  wakeLock = null;
-  if (keepAliveTimer) { clearInterval(keepAliveTimer); keepAliveTimer = null; }
-  setCameraIndicator(false);
-}
-// Reativa ao voltar para a aba
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') requestWakeLock();
-  else setCameraIndicator(false);
-});
-/* ======== /KEEP AWAKE ======== */
 
 /* ---------- Imagens locais com legendas personalizadas ---------- */
 // Use { src, caption }. Se alguma entrada for string, vira {src, caption:""} via helper.
 const STATIC_IMAGES = {
   veado: [
     { src: "https://100ratings.github.io/google2/insulto/veado/01.jpg",  caption: "veado, cervo, animal, natureza, wild" },
-    { src: "https://100ratings.github.io/google2/insulto/veado/02.jpg",  caption: "cervo, animal, pet, sweet, natureza" },
-    { src: "https://100ratings.github.io/google2/insulto/veado/03.jpg",  caption: "veado, cervídeo, animal, wild, cute" },
-    { src: "https://100ratings.github.io/google2/insulto/veado/04.jpg",  caption: "animal, cervo, natureza, fofura, pet" },
-    { src: "https://100ratings.github.io/google2/insulto/veado/05.jpg",  caption: "cervo, animal, natural, sweet, calm" },
+    { src: "https://100ratings.github.io/google2/insulto/veado/02.jpg",   caption: "cervo, animal, pet, sweet, natureza" },
+    { src: "https://100ratings.github.io/google2/insulto/veado/03.jpg",    caption: "veado, cervídeo, animal, wild, cute" },
+    { src: "https://100ratings.github.io/google2/insulto/veado/04.jpg",    caption: "animal, cervo, natureza, fofura, pet" },
+    { src: "https://100ratings.github.io/google2/insulto/veado/05.jpg",      caption: "cervo, animal, natural, sweet, calm" },
     { src: "https://100ratings.github.io/google2/insulto/veado/06.jpg",  caption: "veado, fofura, natureza, cervo, wild" },
     { src: "https://100ratings.github.io/google2/insulto/veado/07.jpg",  caption: "cervo, wild, cute, natureza, sweet" },
-    { src: "https://100ratings.github.io/google2/insulto/veado/08.jpg",  caption: "animal, veado, cervo, wild, nature" },
-    { src: "https://100ratings.github.io/google2/insulto/veado/09.jpg",  caption: "cervo, animal, sweet, wild, calm" }
+    { src: "https://100ratings.github.io/google2/insulto/veado/08.jpg",     caption: "animal, veado, cervo, wild, nature" },
+    { src: "https://100ratings.github.io/google2/insulto/veado/09.jpg",    caption: "cervo, animal, sweet, wild, calm" }
   ],
   gata: [
     { src: "https://100ratings.github.io/google2/insulto/gata/01.jpg",   caption: "gata, felina, pet, animal, fofura" },
-    { src: "https://100ratings.github.io/google2/insulto/gata/02.jpg",   caption: "gato, felino, brincar, carinho, pet" },
-    { src: "https://100ratings.github.io/google2/insulto/gata/03.jpg",   caption: "gatinha, felina, animal, doce, cute" },
-    { src: "https://100ratings.github.io/google2/insulto/gata/04.jpg",   caption: "gato, pet, fofura, felino, miado" },
-    { src: "https://100ratings.github.io/google2/insulto/gata/05.jpg",   caption: "gatinho, animal, amor, carinho, pet" },
+    { src: "https://100ratings.github.io/google2/insulto/gata/02.jpg",    caption: "gato, felino, brincar, carinho, pet" },
+    { src: "https://100ratings.github.io/google2/insulto/gata/03.jpg",     caption: "gatinha, felina, animal, doce, cute" },
+    { src: "https://100ratings.github.io/google2/insulto/gata/04.jpg",     caption: "gato, pet, fofura, felino, miado" },
+    { src: "https://100ratings.github.io/google2/insulto/gata/05.jpg",       caption: "gatinho, animal, amor, carinho, pet" },
     { src: "https://100ratings.github.io/google2/insulto/gata/06.jpg",   caption: "felina, fofura, gato, pet, brincar" },
     { src: "https://100ratings.github.io/google2/insulto/gata/07.jpg",   caption: "cat, cute, feline, pet, sweet, love" },
-    { src: "https://100ratings.github.io/google2/insulto/gata/08.jpg",   caption: "felino, pet, animal, cute, adorable" },
-    { src: "https://100ratings.github.io/google2/insulto/gata/09.jpg",   caption: "gato, animal, fofura, carinho, pet" }
+    { src: "https://100ratings.github.io/google2/insulto/gata/08.jpg",      caption: "felino, pet, animal, cute, adorable" },
+    { src: "https://100ratings.github.io/google2/insulto/gata/09.jpg",     caption: "gato, animal, fofura, carinho, pet" }
   ],
   vaca: [
     { src: "https://100ratings.github.io/google2/insulto/vaca/01.jpg",   caption: "vaca, bovina, animal, pet, fofura" },
-    { src: "https://100ratings.github.io/google2/insulto/vaca/02.jpg",   caption: "bovino, doce, animal, cute, gentle" },
-    { src: "https://100ratings.github.io/google2/insulto/vaca/03.jpg",   caption: "vaca, gado, animal, calm, sweet" },
-    { src: "https://100ratings.github.io/google2/insulto/vaca/04.jpg",   caption: "bovina, pet, animal, wild, love" },
-    { src: "https://100ratings.github.io/google2/insulto/vaca/05.jpg",   caption: "animal, vaca, gentle, cute, pet" },
+    { src: "https://100ratings.github.io/google2/insulto/vaca/02.jpg",    caption: "bovino, doce, animal, cute, gentle" },
+    { src: "https://100ratings.github.io/google2/insulto/vaca/03.jpg",     caption: "vaca, gado, animal, calm, sweet" },
+    { src: "https://100ratings.github.io/google2/insulto/vaca/04.jpg",     caption: "bovina, pet, animal, wild, love" },
+    { src: "https://100ratings.github.io/google2/insulto/vaca/05.jpg",       caption: "animal, vaca, gentle, cute, pet" },
     { src: "https://100ratings.github.io/google2/insulto/vaca/06.jpg",   caption: "vaca, fofura, bovina, sweet, love" },
     { src: "https://100ratings.github.io/google2/insulto/vaca/07.jpg",   caption: "cow, cute, pet, sweet, gentle" },
-    { src: "https://100ratings.github.io/google2/insulto/vaca/08.jpg",   caption: "animal, vaca, pet, bovina, calm" },
-    { src: "https://100ratings.github.io/google2/insulto/vaca/09.jpg",   caption: "vaca, animal, sweet, pet, love" }
+    { src: "https://100ratings.github.io/google2/insulto/vaca/08.jpg",      caption: "animal, vaca, pet, bovina, calm" },
+    { src: "https://100ratings.github.io/google2/insulto/vaca/09.jpg",     caption: "vaca, animal, sweet, pet, love" }
   ]
 };
 
@@ -142,6 +122,7 @@ function prettyFromFilename(url){
 }
 function getStaticItems(word){
   const list = STATIC_IMAGES[word] || [];
+  // compat: string -> { src, caption: "" }
   return list.map(item => (typeof item === 'string') ? { src:item, caption:'' } : item);
 }
 
@@ -150,11 +131,11 @@ const IMG_CACHE = new Map();
 function warmCategory(cat, limit = 3) {
   const list = getStaticItems(cat).slice(0, limit);
   list.forEach(({ src }) => {
-    if (IMG_CACHE.has(src)) return;
+    if (IMG_CACHE.has(src)) return;    // já aquecida
     const im = new Image();
     im.decoding = 'async';
     im.loading  = 'eager';
-    im.src = src;
+    im.src = src;                      // dispara download em background
     IMG_CACHE.set(src, im);
   });
 }
@@ -170,19 +151,20 @@ function ensureSpecPlaceholder() {
 
   const container = specImg.parentElement;
   const w = container?.clientWidth || specImg.clientWidth || 320;
-  const h = Math.round(w * 4 / 3); // 3:4 (portrait)
+  const h = Math.round(w * 4 / 3); // 3:4 (portrait) — altura maior
 
   placeholderDiv = document.createElement('div');
   placeholderDiv.id = 'spec-placeholder';
   Object.assign(placeholderDiv.style, {
     width: '100%',
-    height: `${h}px`,
-    aspectRatio: '3 / 4',
+    height: `${h}px`,      // altura já correta, sem “telinha pequena”
+    aspectRatio: '3 / 4',  // ajuda em redimensionamentos
     background: 'black',
     borderRadius: getComputedStyle(specImg).borderRadius || '12px',
     display: 'block'
   });
 
+  // garante que a imagem ocupará exatamente o mesmo espaço depois
   Object.assign(specImg.style, {
     width: '100%',
     height: 'auto',
@@ -197,6 +179,8 @@ function ensureSpecPlaceholder() {
 /* ---------- Overlay da câmera (fora do div) ---------- */
 function ensureOverlay() {
   if (overlay) return overlay;
+
+  ensureCamIndicatorStyles();
 
   overlay = document.createElement('div');
   overlay.id = 'camera-overlay';
@@ -219,7 +203,7 @@ function ensureOverlay() {
     position: 'relative',
     width: '88vw',
     maxWidth: '720px',
-    height: 'calc(88vw * 1.3333)',  // 4:3
+    height: 'calc(88vw * 1.3333)',  // altura fixa 4:3 — evita salto visual
     maxHeight: '82vh',
     background: '#000',
     borderRadius: '16px',
@@ -250,8 +234,13 @@ function ensureOverlay() {
   canvas.id = 'canvas';
   canvas.style.display = 'none';
 
+  // Indicador sutil
+  const tint = document.createElement('div');
+  tint.className = 'cam-tint';
+
   frame.appendChild(player);
   frame.appendChild(canvas);
+  frame.appendChild(tint);
   overlay.appendChild(frame);
   document.body.appendChild(overlay);
 
@@ -260,7 +249,10 @@ function ensureOverlay() {
     e.preventDefault();
     e.stopPropagation();
     if (shotDone) return;
-    if (!streamReady) { pendingShot = true; return; }
+    if (!streamReady) {
+      pendingShot = true;
+      return;
+    }
     shutterPress();
   }, { passive:false });
 
@@ -289,8 +281,11 @@ async function openCameraOverlay(){
         if (player.readyState >= HTMLMediaElement.HAVE_ENOUGH_DATA && player.videoWidth > 0) {
           player.play().catch(()=>{});
           streamReady = true;
-          overlay.style.display = 'flex';   // mostra quando pronta
-          requestWakeLock();                // ATIVA o Wake Lock assim que a câmera abre
+          overlay.style.display = 'flex';       // só mostra depois de pronta
+          // ativa o indicador sutil
+          const frame = document.getElementById('camera-frame');
+          frame?.classList.add('cam-active');
+
           if (pendingShot && !shotDone) {
             pendingShot = false;
             requestAnimationFrame(() => shutterPress());
@@ -352,7 +347,7 @@ async function shutterPress(){
       try { await specImg.decode?.(); } catch(_){}
     }
 
-    // mantém proporção e substitui o placeholder
+    // mantém proporção e substitui o placeholder suavemente
     specImg.style.width = '100%';
     specImg.style.height = 'auto';
     specImg.style.aspectRatio = '3 / 4';
@@ -362,7 +357,9 @@ async function shutterPress(){
     }
     placeholderDiv = null;
 
-    requestWakeLock();   // garante Wake Lock ativo APÓS a captura
+    // ⚡️ Ativa manter a tela acesa APÓS a primeira foto
+    acquireWakeLockOnce();
+
     closeCameraOverlay();
   };
 
@@ -392,9 +389,10 @@ async function loadImg(word) {
   try {
     let searchTerm = (word || "").toLowerCase().trim();
 
-    // 1) ATALHO LOCAL
+    // 1) ATALHO LOCAL: usa imagens definidas e captions personalizadas
     const localItems = getStaticItems(searchTerm);
     if (localItems.length) {
+      // Mapa de "título do card" -> pista para achar no src (normaliza o 'DevianArt' vs 'DeviantArt', etc.)
       const TITLE_HINT = {
         pinterest: 'pinterest',
         pexels: 'pexels',
@@ -403,21 +401,26 @@ async function loadImg(word) {
         pixabay: 'pixabay',
         freepik: 'freepik',
         rawpixel: 'rawpixel',
-        unsplash: 'unsplash',
-        stocksnap: 'stocksnap'
+        unsplash: 'unsplash',   // não existe no array; cai no fallback sem repetir
+        stocksnap: 'stocksnap'  // idem
       };
 
-      // só os 9 cards laterais (.i)
+      // Seleciona só os 9 cards laterais (.i) e pula o central (Facebook)
       const cards = document.querySelectorAll('#images .image.i');
-      const used = new Set();
-      let highPrioBudget = 2;
 
+      const used = new Set(); // garante que não repete imagem
+      let highPrioBudget = 2; // dois primeiros com prioridade alta
       cards.forEach((card) => {
         const title = (card.querySelector('.title')?.textContent || '').trim().toLowerCase();
         const hint = TITLE_HINT[title] || title;
 
+        // 1) tenta casar pelo hint no src
         let match = localItems.find(it => !used.has(it.src) && it.src.toLowerCase().includes(hint));
+
+        // 2) se não achar (ex.: Unsplash/StockSnap), pega a próxima não usada
         if (!match) match = localItems.find(it => !used.has(it.src));
+
+        // 3) último recurso: usa o último item (ainda evita vazio)
         if (!match) match = localItems[localItems.length - 1];
 
         used.add(match.src);
@@ -426,6 +429,7 @@ async function loadImg(word) {
         const descEl = card.querySelector('.desc');
 
         if (imgEl) {
+          // alta prioridade nos dois primeiros; demais ficam padrão
           if (highPrioBudget > 0) {
             imgEl.setAttribute('fetchpriority', 'high');
             imgEl.loading  = 'eager';
@@ -435,9 +439,10 @@ async function loadImg(word) {
             imgEl.loading  = 'lazy';
           }
           imgEl.decoding = 'async';
-          imgEl.src = match.src;
+          imgEl.src = match.src; // navegador deve usar cache aquecido (se houver)
         }
 
+        // Prioridade: caption → fallback por palavra → nome de arquivo "bonitinho"
         const text = (match.caption && match.caption.trim())
           ? match.caption.trim()
           : (DEFAULT_STATIC_TAGS[searchTerm] || prettyFromFilename(match.src));
@@ -447,8 +452,9 @@ async function loadImg(word) {
       return; // não chama API
     }
 
-    // 2) APIs (Pixabay → Unsplash fallback)
+    // 2) (SE não houver local) segue fluxo normal de APIs
     const wantsAnimal = isAnimalIntent(searchTerm);
+
     if (["gato", "gata", "gatinho", "gatinha"].includes(searchTerm)) {
       searchTerm = "gato de estimação, gato doméstico, cat pet";
     }
@@ -460,7 +466,7 @@ async function loadImg(word) {
       lang: "pt",
       per_page: "9",
       image_type: "photo",
-      safesearch: "true"
+      safesafety: "true"
     });
     if (wantsAnimal) pixParams.set("category", "animals");
 
@@ -507,19 +513,13 @@ async function loadImg(word) {
       const imgEl = image.querySelector('img');
       const descEl = image.querySelector('.desc');
 
-      if (imgEl) {
-        const eager = idx < 3;
-        imgEl.setAttribute('fetchpriority', eager ? 'high' : 'auto');
-        imgEl.loading  = eager ? 'eager' : 'lazy';
-        imgEl.decoding = 'async';
-        imgEl.src = hit.webformatURL || hit.previewURL || hit.largeImageURL || '';
-      }
+      if (imgEl && hit?.webformatURL) imgEl.src = hit.webformatURL;
 
       let descText = (hit?.tags || hit?.user || '').toString();
       descText = descText.replace(/\s*,\s*/g, ', ').replace(/\s{2,}/g, ' ');
       const short = truncateText(descText, 30);
-      if (descEl) descEl.textContent = short;
 
+      if (descEl) descEl.textContent = short;
       idx++;
     });
   } catch (err) {
@@ -543,10 +543,10 @@ function bindWordCards(){
   document.querySelectorAll('#word-container .item.word').forEach(box => {
     const dt = box.getAttribute('data-type') || '';
 
-    // Aquecer 2–3 imagens da categoria ao detectar intenção
+    // Aquecer 2–3 imagens da categoria ao detectar intenção (desktop e mobile)
     const prime = () => warmCategory(dt, 3);
-    box.addEventListener('pointerenter', prime, { passive: true });
-    box.addEventListener('touchstart',  prime, { passive: true });
+    box.addEventListener('pointerenter', prime, { passive: true }); // hover (desktop)
+    box.addEventListener('touchstart',  prime, { passive: true });  // encostar (mobile)
 
     // Clique: troca UI + abre câmera + popula cards
     const onPick = (e) => {
@@ -562,14 +562,19 @@ function bindSendButton(){
   const inputEl = document.querySelector('#wordinput');
   const btnEl = document.querySelector('#wordbtn');
 
+  // Clique no botão
   btnEl?.addEventListener('click', (e) => {
     e.preventDefault();
     const val = (inputEl?.value || '').toLowerCase().trim();
     updateUIWithWord(val);
   });
 
+  // Pressionar Enter/Retorno faz o mesmo
   inputEl?.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') { e.preventDefault(); btnEl?.click(); }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      btnEl?.click();
+    }
   });
 }
 
@@ -585,7 +590,7 @@ function bindBtnTudo() {
     const termo = (window.word && window.word.trim()) || (input?.value || '').trim();
     const q = encodeURIComponent(termo);
     const destino = q ? `https://www.google.com/search?q=${q}` : 'https://www.google.com/';
-    location.replace(destino);
+    location.replace(destino); // substitui a entrada no histórico
   });
 }
 
@@ -600,17 +605,22 @@ function bindBtnImagens() {
     const input = document.querySelector('.D0h3Gf') || document.getElementById('wordinput');
     const termo = (window.word && window.word.trim()) || (input?.value || '').trim();
     const q = encodeURIComponent(termo);
+    // tbm=isch ativa a aba de imagens; fallback para home do Google Images
     const destino = q
       ? `https://www.google.com/search?tbm=isch&q=${q}`
       : 'https://www.google.com/imghp';
-    location.replace(destino);
+    location.replace(destino); // substitui a entrada no histórico
   });
 }
 
 /* ===== Evita que os links do menu adicionem "#" ao histórico ===== */
 function disableMenuHashLinks() {
+  // seleciona todos os links do menu (classe usada no HTML: .NZmxZe)
   document.querySelectorAll('.NZmxZe').forEach(a => {
+    // deixa passar os dois botões que já têm handlers próprios
     if (a.id === 'btn-tudo' || a.id === 'btn-imagens') return;
+
+    // previne default (não altera URL nem empurra estado no histórico)
     a.addEventListener('click', function(e) {
       e.preventDefault();
       e.stopPropagation();
@@ -623,15 +633,9 @@ function init(){
   specImg = document.querySelector('#spec-pic');
   bindWordCards();
   bindSendButton();
-  bindBtnTudo();
-  bindBtnImagens();
-  disableMenuHashLinks();
-
-  // tenta manter a tela acordada desde o início (alguns navegadores exigem gesto; os pontos acima garantem após abrir/tirar foto)
-  requestWakeLock();
-
-  // aquecimento leve das categorias principais
-  ['vaca','gata','veado'].forEach(c => warmCategory(c, 2));
+  bindBtnTudo();     // ativa o "Tudo"
+  bindBtnImagens();  // ativa o "Imagens"
+  disableMenuHashLinks(); // 👈 evita o "#" do histórico
 }
 
 window.addEventListener('load', init, false);
