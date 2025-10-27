@@ -83,8 +83,8 @@ html {
 }
 body.show-cam #cam-container { display: block; }
 body.show-cam #google-container {
-  pointer-events: none;
-  visibility: hidden;
+  pointer-events: none;   /* bloqueia interação, mas continua visível */
+  /* visibility: hidden;  <-- REMOVIDO */
 }
 
 /* ===== VIDEO ===== */
@@ -397,6 +397,7 @@ input, button, .desc, .title, .D0h3Gf {
   border: 1px solid rgba(0,0,0,.25);
   box-shadow: 0 2px 6px rgba(0,0,0,.25);
 }
+
 
 
 
