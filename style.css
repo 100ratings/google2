@@ -207,7 +207,7 @@ a{text-decoration:none;color:#2962ff}
 /* Ajustar distância das abas no mobile */
 @media (max-width: 768px) {
   .jZWadf {
-    margin-top: 6px;              /* aproxima das buscas */
+    margin-top: 8px;              /* aproxima das buscas */
     border-bottom: 1px solid #dadce0; /* linha cinza clara */
     padding-bottom: 0px;          /* garante que não empurre a linha para baixo */
   }
@@ -216,6 +216,7 @@ a{text-decoration:none;color:#2962ff}
     margin-bottom: 4px;
   }
 }
+
 
 
 
