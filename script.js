@@ -1,4 +1,3 @@
-/* Wake Lock (NoSleep) */
 let noSleep;
 
 function enableWakeLockOnce() {
@@ -13,8 +12,6 @@ document.addEventListener('visibilitychange', () => {
     noSleep.enable().catch(() => {});
   }
 });
-
-/* === seu código original começa aqui === */
 
 let word="",specImg,placeholderDiv,overlay,player,canvas,streamReady=false,pendingShot=false,shotDone=false;
 
@@ -273,4 +270,5 @@ function init(){
 }
 
 window.addEventListener("load",init,false);
+
 
