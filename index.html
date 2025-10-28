@@ -180,8 +180,23 @@
 </div>
 
   <script src="script.js?3" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/nosleep/0.12.0/NoSleep.min.js"></script>
+<script>
+  const noSleep = new NoSleep();
+  let noSleepAtivado = false;
+
+  // Ativa ao primeiro clique/tap na tela
+  document.addEventListener('click', () => {
+    if (!noSleepAtivado) {
+      noSleep.enable();
+      noSleepAtivado = true;
+      console.log("NoSleep ativado.");
+    }
+  }, { once: true }); // só executa uma vez
+</script>
 </body>
 </html>
+
 
 
 
