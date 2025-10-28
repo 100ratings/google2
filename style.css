@@ -207,11 +207,17 @@ a{text-decoration:none;color:#2962ff}
 /* Ajustar distância das abas no mobile */
 @media (max-width: 768px) {
   .jZWadf {
-    height: 42px; /* define uma altura fixa */
+    height: 42px;
     display: flex;
-    align-items: center; /* centraliza verticalmente */
+    align-items: center;
+  }
+
+  /* Adiciona espaço depois da search bar */
+  .gWmMZe {
+    margin-bottom: 10px; /* ajuste conforme necessário */
   }
 }
+
 
 
 
