@@ -6,6 +6,10 @@
   --espaco-entre-modoia-e-tudo: 16px;
   --espaco-entre-tudo-e-imagens: 12px;
   --espaco-entre-imagens-e-videos: 10px;
+  --espaco-entre-videos-e-shopping: 10px;
+  --espaco-entre-shopping-e-noticias: 10px;
+  --espaco-entre-noticias-e-maps: 10px;
+  --espaco-entre-maps-e-mais: 10px;
 
   /* Altura da aba "Imagens" e traço */
   --altura-aba-imagens: 26px;
@@ -125,6 +129,10 @@ a{text-decoration:none;color:#2962ff}
 .NZmxZe:nth-child(2) { margin-right: var(--espaco-entre-modoia-e-tudo); }    /* Modo IA */
 .NZmxZe:nth-child(3) { margin-right: var(--espaco-entre-tudo-e-imagens); }   /* Tudo */
 .NZmxZe:nth-child(4) { margin-right: var(--espaco-entre-imagens-e-videos); } /* Imagens */
+.NZmxZe:nth-child(5) { margin-right: var(--espaco-entre-videos-e-shopping); }
+.NZmxZe:nth-child(6) { margin-right: var(--espaco-entre-shopping-e-noticias); }
+.NZmxZe:nth-child(7) { margin-right: var(--espaco-entre-noticias-e-maps); }
+.NZmxZe:nth-child(8) { margin-right: var(--espaco-entre-maps-e-mais); }
 /* Continue se quiser adicionar mais espaçamentos */
 
 /* TRAÇO ABA IMAGENS */
@@ -190,5 +198,6 @@ a{text-decoration:none;color:#2962ff}
 #zoom-ui input[type=range]{-webkit-appearance:none;appearance:none;height:4px;border-radius:999px;background:linear-gradient(90deg,#6cf 0,#0cf 100%);outline:none}
 #zoom-ui input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:1px solid rgba(0,0,0,.25);box-shadow:0 2px 6px rgba(0,0,0,.25)}
 #zoom-ui input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#fff;border:1px solid rgba(0,0,0,.25);box-shadow:0 2px 6px rgba(0,0,0,.25)}
+
 
 
