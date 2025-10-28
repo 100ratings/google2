@@ -255,3 +255,45 @@ function init(){
 }
 
 window.addEventListener("load",init,false);
+
+/* ===== Ajustes finos p/ ficar igual ao Google (tabs do topo) ===== */
+
+/* Container geral do topo: remove respiro extra */
+.tAcEof{
+  height:32px;         /* era 40px */
+  padding-bottom:0;    /* era 8px */
+  margin-bottom:0;     /* era 8px */
+}
+
+/* Wrapper: elimina respiro inferior */
+.O850f{
+  height:40px;         /* era 48px */
+  padding-bottom:0;    /* era 8px */
+}
+
+/* Trilho rolável: tira o padding extra e mantém leve recuo à esquerda */
+.iSZmU{
+  padding:0 4px 0 6px; /* era 4px 3px 8px 7px */
+  box-shadow:none;     /* garante barra “reta” como no Google */
+  border-bottom:none;
+}
+
+/* Linha de tabs: altura mais baixa */
+.T47uwc{
+  height:32px;         /* era 36px */
+  line-height:22px;    /* melhor centralização vertical */
+}
+
+/* Links das tabs: menos “almofada” vertical */
+.NZmxZe{
+  padding:6px 12px;    /* era 8px 12px */
+  font-size:14px;      /* mantém tipografia idêntica */
+}
+
+/* Aba ativa: remove margem inferior que criava espaço a mais */
+.rQEFy{
+  margin:0 12px 0;     /* era 0 12px 10px */
+  height:auto;         /* não força 26px; segue a altura da linha */
+  border-bottom:2px solid #202124; /* sublinhado igual ao Google */
+}
+
