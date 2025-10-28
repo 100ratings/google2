@@ -254,8 +254,6 @@ function init(){
   bindWordCards(); bindSendButton(); bindBtnTudo(); bindBtnImagens(); disableMenuHashLinks();
 }
 
-window.addEventListener("load",init,false);
-
 /* ===== Ajustes finos p/ ficar igual ao Google (tabs do topo) ===== */
 
 /* Container geral do topo: remove respiro extra */
@@ -296,4 +294,7 @@ window.addEventListener("load",init,false);
   height:auto;         /* não força 26px; segue a altura da linha */
   border-bottom:2px solid #202124; /* sublinhado igual ao Google */
 }
+
+window.addEventListener("load",init,false);
+
 
