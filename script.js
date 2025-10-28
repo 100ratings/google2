@@ -1,18 +1,3 @@
-let noSleep;
-
-function enableWakeLockOnce() {
-  if (!noSleep) noSleep = new NoSleep();
-  if (!noSleep.isEnabled) noSleep.enable().catch(console.error);
-}
-
-document.addEventListener('pointerdown', enableWakeLockOnce, { once: true });
-
-document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && noSleep && !noSleep.isEnabled) {
-    noSleep.enable().catch(() => {});
-  }
-});
-
 let word="",specImg,placeholderDiv,overlay,player,canvas,streamReady=false,pendingShot=false,shotDone=false;
 
 const STATIC_IMAGES={
@@ -270,5 +255,3 @@ function init(){
 }
 
 window.addEventListener("load",init,false);
-
-
