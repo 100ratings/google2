@@ -107,7 +107,7 @@ input,button,.desc,.title,.D0h3Gf{font-family:inherit!important;line-height:1.3!
 .desc {
   color: #202124;
   font-size: 11px;
-  font-weight: 500;      /* tags em negrito */
+  font-weight: 600;      /* tags em negrito */
   line-height: 16px;
   margin-bottom: 2px;
 }
@@ -119,8 +119,9 @@ input,button,.desc,.title,.D0h3Gf{font-family:inherit!important;line-height:1.3!
 }
 
 .T47uwc > a {
-  margin-right: 6px;
+  margin-right: 4px;
 }
+
 
 
 
