@@ -14,7 +14,7 @@
   --espaco-imagem-e-tags: 5px;
   --espaco-tags-e-titulo: 2px;
      /* Altura das abas (Modo IA, Tudo, Imagens etc.) */
-  --altura-das-abas: 32px;
+  --altura-das-abas: 40px;
 
   /* Altura da aba "Imagens" e traço */
   --altura-aba-imagens: 26px;
@@ -206,6 +206,7 @@ a{text-decoration:none;color:#2962ff}
 #zoom-ui input[type=range]{-webkit-appearance:none;appearance:none;height:4px;border-radius:999px;background:linear-gradient(90deg,#6cf 0,#0cf 100%);outline:none}
 #zoom-ui input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:1px solid rgba(0,0,0,.25);box-shadow:0 2px 6px rgba(0,0,0,.25)}
 #zoom-ui input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#fff;border:1px solid rgba(0,0,0,.25);box-shadow:0 2px 6px rgba(0,0,0,.25)}
+
 
 
 
