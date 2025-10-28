@@ -207,14 +207,17 @@ a{text-decoration:none;color:#2962ff}
 /* Ajustar distância das abas no mobile */
 @media (max-width: 768px) {
   .jZWadf {
-    margin-top: 10px; /* espaçamento entre search bar e abas */
-    border-bottom: 1px solid #dadce0; /* linha cinza clara como no Google */
+    margin-top: 6px;              /* aproxima das buscas */
+    border-bottom: 1px solid #dadce0; /* linha cinza clara */
+    padding-bottom: 0px;          /* garante que não empurre a linha para baixo */
   }
 
   .gWmMZe {
     margin-bottom: 6px;
   }
 }
+
+
 
 
 
