@@ -66,9 +66,8 @@ a{text-decoration:none;color:#2962ff}
 .tAcEof{height:40px;padding-bottom:8px;margin-bottom:8px}
 .O850f{overflow:hidden;height:48px;padding-bottom:8px;position:relative}
 .pWEaFf{background:-webkit-gradient(linear,left top,right top,color-stop(0,rgba(255,255,255,0)),color-stop(100%,#fff));border-bottom-right-radius:8px;height:48px;position:absolute;pointer-events:none;right:0;top:0;width:24px;z-index:2}
-.iSZmU{overflow-x:auto;overflow-y:hidden;display:flex;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-.iSZmU::-webkit-scrollbar{display:none}
-.T47uwc{display:inline-flex;white-space:nowrap;gap:2px} /* ← espaçamento uniforme */
+.iSZmU{box-shadow:0 1px 3px rgba(60,64,67,.08);height:44px;overflow-x:scroll;overflow-y:hidden;padding:4px 3px 8px 7px;position:relative;z-index:1}
+.T47uwc{background:#fff;display:inline-block;font-weight:500;height:36px;line-height:27px;white-space:nowrap}
 .bytUYc{clip:rect(1px,1px,1px,1px);height:1px;overflow:hidden;position:absolute;width:1px;z-index:-1000}
 .NZmxZe{color:rgba(0,0,0,.54);display:inline-block;padding:8px 12px;font-size:14px;font-weight:500}
 .rQEFy{border-bottom:2px solid #202124;color:#202124;height:26px;margin:0 12px 10px}
@@ -79,19 +78,8 @@ a{text-decoration:none;color:#2962ff}
 .image img{width:100%;border-radius:12px}
 
 /* Descrição dos cards */
-.desc {
-  color: #202124;
-  font-size: 11px;
-  font-weight: 500;      /* tags suavemente em destaque */
-  line-height: 16px;
-  margin-bottom: 2px;
-}
-.title {
-  color: #202124;
-  font-size: 11px;
-  line-height: 14px;
-  font-weight: 400;
-}
+.title{color:#5f6368;font-size:11px;line-height:16px;font-weight:400;margin-bottom:0}
+.desc{color:#202124;font-size:11px;font-weight:400;letter-spacing:.2px;line-height:14px;margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block;max-width:100%;word-break:keep-all;hyphens:none}
 
 /* Tipografia Android */
 html,body{-webkit-text-size-adjust:100%;text-rendering:optimizeLegibility;font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.25;letter-spacing:.25px;word-spacing:.5px}
@@ -112,44 +100,3 @@ input,button,.desc,.title,.D0h3Gf{font-family:inherit!important;line-height:1.3!
 #zoom-ui input[type=range]{-webkit-appearance:none;appearance:none;height:4px;border-radius:999px;background:linear-gradient(90deg,#6cf 0,#0cf 100%);outline:none}
 #zoom-ui input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:1px solid rgba(0,0,0,.25);box-shadow:0 2px 6px rgba(0,0,0,.25)}
 #zoom-ui input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#fff;border:1px solid rgba(0,0,0,.25);box-shadow:0 2px 6px rgba(0,0,0,.25)}
-
-/* === AJUSTES FINAIS DE ALINHAMENTO E ESPAÇAMENTO === */
-
-/* Alinhar lupa, campo de busca e botão de câmera */
-.BXNHhe {
-  display: flex;
-  align-items: center;     /* ← garante alinhamento vertical */
-  height: 40px;            /* ajuste fino da altura */
-  border-radius: 24px;
-  background: #fff;
-  box-shadow: 0 1px 3px rgba(60,64,67,.16);
-}
-
-.fqb79e,
-.PwtgSd {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 40px;
-}
-
-.ECy52e,
-.RGYaxe {
-  height: 20px;
-  width: 20px;
-  margin: 0;
-}
-
-.D0h3Gf {
-  font-size: 16px;
-  padding: 0 8px;
-  height: 36px;
-  line-height: 36px;
-}
-
-/* Reduzir espaçamento entre os modos de pesquisa */
-.T47uwc {
-  display: inline-flex;
-  white-space: nowrap;
-  gap: 2px; /* ou experimente 1px para ainda mais colado */
-}
