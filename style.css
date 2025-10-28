@@ -207,9 +207,12 @@ a{text-decoration:none;color:#2962ff}
 /* Ajustar distância das abas no mobile */
 @media (max-width: 768px) {
   .jZWadf {
-    margin-top: 14px; /* ajuste aqui — teste: 10, 14, 18px */
+    height: 42px; /* define uma altura fixa */
+    display: flex;
+    align-items: center; /* centraliza verticalmente */
   }
 }
+
 
 
 
