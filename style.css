@@ -68,7 +68,7 @@ a{text-decoration:none;color:#2962ff}
 .pWEaFf{background:-webkit-gradient(linear,left top,right top,color-stop(0,rgba(255,255,255,0)),color-stop(100%,#fff));border-bottom-right-radius:8px;height:48px;position:absolute;pointer-events:none;right:0;top:0;width:24px;z-index:2}
 .iSZmU{overflow-x:auto;overflow-y:hidden;display:flex;-webkit-overflow-scrolling:touch;scrollbar-width:none}
 .iSZmU::-webkit-scrollbar{display:none}
-.T47uwc{display:inline-flex;white-space:nowrap;gap:4px} /* ← espaçamento uniforme */
+.T47uwc{display:inline-flex;white-space:nowrap;gap:2px} /* ← espaçamento uniforme */
 .bytUYc{clip:rect(1px,1px,1px,1px);height:1px;overflow:hidden;position:absolute;width:1px;z-index:-1000}
 .NZmxZe{color:rgba(0,0,0,.54);display:inline-block;padding:8px 12px;font-size:14px;font-weight:500}
 .rQEFy{border-bottom:2px solid #202124;color:#202124;height:26px;margin:0 12px 10px}
@@ -112,3 +112,45 @@ input,button,.desc,.title,.D0h3Gf{font-family:inherit!important;line-height:1.3!
 #zoom-ui input[type=range]{-webkit-appearance:none;appearance:none;height:4px;border-radius:999px;background:linear-gradient(90deg,#6cf 0,#0cf 100%);outline:none}
 #zoom-ui input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:1px solid rgba(0,0,0,.25);box-shadow:0 2px 6px rgba(0,0,0,.25)}
 #zoom-ui input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#fff;border:1px solid rgba(0,0,0,.25);box-shadow:0 2px 6px rgba(0,0,0,.25)}
+
+/* === AJUSTES FINAIS DE ALINHAMENTO E ESPAÇAMENTO === */
+
+/* Alinhar lupa, campo de busca e botão de câmera */
+.BXNHhe {
+  display: flex;
+  align-items: center;     /* ← garante alinhamento vertical */
+  height: 40px;            /* ajuste fino da altura */
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(60,64,67,.16);
+}
+
+.fqb79e,
+.PwtgSd {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 40px;
+}
+
+.ECy52e,
+.RGYaxe {
+  height: 20px;
+  width: 20px;
+  margin: 0;
+}
+
+.D0h3Gf {
+  font-size: 16px;
+  padding: 0 8px;
+  height: 36px;
+  line-height: 36px;
+}
+
+/* Reduzir espaçamento entre os modos de pesquisa */
+.T47uwc {
+  display: inline-flex;
+  white-space: nowrap;
+  gap: 2px; /* ou experimente 1px para ainda mais colado */
+}
+
