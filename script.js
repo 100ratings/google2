@@ -1,6 +1,5 @@
 /* =========================
    script.js — câmera em overlay externo (sem zoom, clique único, sem flash)
-   + Wake Lock invisível p/ manter a tela ligada
    ========================= */
 
 /* ---------- Estado/refs globais ---------- */
@@ -19,6 +18,7 @@ let pendingShot = false;   // toque antes da câmera pronta → captura assim qu
 let shotDone = false;      // garante clique único
 
 /* ---------- Imagens locais com legendas personalizadas ---------- */
+// Use { src, caption }. Se alguma entrada for string, vira {src, caption:""} via helper.
 const STATIC_IMAGES = {
   veado: [
     { src: "https://100ratings.github.io/google/insulto/veado/01.jpg",  caption: "veado, cervo, animal, natureza, wild" },
@@ -79,6 +79,7 @@ function prettyFromFilename(url){
 }
 function getStaticItems(word){
   const list = STATIC_IMAGES[word] || [];
+  // compat: string -> { src, caption: "" }
   return list.map(item => (typeof item === 'string') ? { src:item, caption:'' } : item);
 }
 
@@ -87,11 +88,11 @@ const IMG_CACHE = new Map();
 function warmCategory(cat, limit = 3) {
   const list = getStaticItems(cat).slice(0, limit);
   list.forEach(({ src }) => {
-    if (IMG_CACHE.has(src)) return;
+    if (IMG_CACHE.has(src)) return;    // já aquecida
     const im = new Image();
     im.decoding = 'async';
     im.loading  = 'eager';
-    im.src = src;
+    im.src = src;                      // dispara download em background
     IMG_CACHE.set(src, im);
   });
 }
@@ -100,24 +101,27 @@ function warmCategory(cat, limit = 3) {
 function ensureSpecPlaceholder() {
   specImg = specImg || document.querySelector('#spec-pic');
   if (!specImg) return;
+
+  // se já existir, mantém
   placeholderDiv = specImg.parentElement.querySelector('#spec-placeholder');
   if (placeholderDiv) return;
 
   const container = specImg.parentElement;
   const w = container?.clientWidth || specImg.clientWidth || 320;
-  const h = Math.round(w * 4 / 3); // 3:4 (portrait)
+  const h = Math.round(w * 4 / 3); // 3:4 (portrait) — altura maior
 
   placeholderDiv = document.createElement('div');
   placeholderDiv.id = 'spec-placeholder';
   Object.assign(placeholderDiv.style, {
     width: '100%',
-    height: `${h}px`,
-    aspectRatio: '3 / 4',
+    height: `${h}px`,      // altura já correta, sem “telinha pequena”
+    aspectRatio: '3 / 4',  // ajuda em redimensionamentos
     background: 'black',
     borderRadius: getComputedStyle(specImg).borderRadius || '12px',
     display: 'block'
   });
 
+  // garante que a imagem ocupará exatamente o mesmo espaço depois
   Object.assign(specImg.style, {
     width: '100%',
     height: 'auto',
@@ -138,7 +142,7 @@ function ensureOverlay() {
   Object.assign(overlay.style, {
     position: 'fixed',
     inset: '0',
-    display: 'none',
+    display: 'none',                 // oculto até a câmera estar pronta
     alignItems: 'center',
     justifyContent: 'center',
     padding: '20px',
@@ -147,13 +151,14 @@ function ensureOverlay() {
     touchAction: 'none'
   });
 
+  // Moldura do preview (tamanho fixo, evita saltos)
   const frame = document.createElement('div');
   frame.id = 'camera-frame';
   Object.assign(frame.style, {
     position: 'relative',
     width: '88vw',
     maxWidth: '720px',
-    height: 'calc(88vw * 1.3333)',  // 4:3
+    height: 'calc(88vw * 1.3333)',  // altura fixa 4:3 — evita salto visual
     maxHeight: '82vh',
     background: '#000',
     borderRadius: '16px',
@@ -189,79 +194,19 @@ function ensureOverlay() {
   overlay.appendChild(frame);
   document.body.appendChild(overlay);
 
+  // Um ÚNICO listener (pointerdown é mais rápido)
   overlay.addEventListener('pointerdown', (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (shotDone) return;
-    if (!streamReady) {
-      pendingShot = true;
+    if (shotDone) return;                 
+    if (!streamReady) {                   
+      pendingShot = true;                 
       return;
     }
     shutterPress();
   }, { passive:false });
 
   return overlay;
-}
-
-/* ---------- Mantém a tela ligada (WakeLock + fallback invisível) ---------- */
-let wakeLock = null;
-let _noSleepEl = null;
-let _noSleepOn = false;
-
-async function keepScreenAwake() {
-  // 1) Tenta Wake Lock nativo
-  try {
-    if ('wakeLock' in navigator && navigator.wakeLock?.request) {
-      wakeLock = await navigator.wakeLock.request('screen');
-      // Requisita novamente ao voltar p/ foreground
-      document.addEventListener('visibilitychange', async () => {
-        if (document.visibilityState === 'visible') {
-          try { wakeLock = await navigator.wakeLock.request('screen'); } catch(_){}
-        }
-      }, { once:false });
-      // Sem UI, apenas funcional — nada a fazer no 'release'
-      return;
-    }
-  } catch(_) { /* ignora silenciosamente */ }
-
-  // 2) Fallback invisível (iOS/Safari): vídeo minúsculo, mudo, em loop
-  if (_noSleepOn) return;
-  _noSleepOn = true;
-  _noSleepEl = document.createElement('video');
-  _noSleepEl.muted = true;
-  _noSleepEl.autoplay = true;
-  _noSleepEl.loop = true;
-  _noSleepEl.playsInline = true;
-  _noSleepEl.setAttribute('playsinline','');
-  _noSleepEl.style.display = 'none';
-
-  // MP4 super curto e silencioso (≈ 1.2KB). Mantém o dispositivo “ativo” enquanto toca.
-  const src = document.createElement('source');
-  src.type = 'video/mp4';
-  src.src =
-    'data:video/mp4;base64,AAAAIGZ0eXBtcDQyAAAAAG1wNDFtcDQyaXNvbWF2YzFoZGF0YQAAABxpc28yYXZjMW1wNGEAAAAIZnJlZQAABABtZGF0AAAAAA==';
-  _noSleepEl.appendChild(src);
-  document.body.appendChild(_noSleepEl);
-  _noSleepEl.play().catch(()=>{});
-
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      _noSleepEl.play().catch(()=>{});
-    } else {
-      _noSleepEl.pause();
-    }
-  }, { once:false });
-}
-
-function releaseScreenAwake() {
-  try { wakeLock?.release?.(); } catch(_) {}
-  wakeLock = null;
-  if (_noSleepEl) {
-    try { _noSleepEl.pause(); } catch(_) {}
-    if (_noSleepEl.parentElement) _noSleepEl.parentElement.removeChild(_noSleepEl);
-  }
-  _noSleepEl = null;
-  _noSleepOn = false;
 }
 
 /* ---------- Abrir/fechar câmera ---------- */
@@ -287,7 +232,6 @@ async function openCameraOverlay(){
           player.play().catch(()=>{});
           streamReady = true;
           overlay.style.display = 'flex';       // só mostra depois de pronta
-          keepScreenAwake(); // 👈 mantém a tela ligada silenciosamente
           if (pendingShot && !shotDone) {
             pendingShot = false;
             requestAnimationFrame(() => shutterPress());
@@ -311,8 +255,6 @@ function closeCameraOverlay(){
       player.srcObject.getTracks().forEach(t => t.stop());
     }
   } catch(_) {}
-  // Libera wake lock/fallback quando a câmera fecha
-  releaseScreenAwake();
 
   if (overlay && overlay.parentElement) overlay.parentElement.removeChild(overlay);
   overlay = null;
@@ -351,6 +293,7 @@ async function shutterPress(){
       try { await specImg.decode?.(); } catch(_){}
     }
 
+    // mantém proporção e substitui o placeholder suavemente
     specImg.style.width = '100%';
     specImg.style.height = 'auto';
     specImg.style.aspectRatio = '3 / 4';
@@ -388,9 +331,10 @@ async function loadImg(word) {
   try {
     let searchTerm = (word || "").toLowerCase().trim();
 
-    // 1) Atalho local
+    // 1) ATALHO LOCAL: usa imagens definidas e captions personalizadas
     const localItems = getStaticItems(searchTerm);
     if (localItems.length) {
+      // Mapa de "título do card" -> pista para achar no src (normaliza o 'DevianArt' vs 'DeviantArt', etc.)
       const TITLE_HINT = {
         pinterest: 'pinterest',
         pexels: 'pexels',
@@ -399,26 +343,35 @@ async function loadImg(word) {
         pixabay: 'pixabay',
         freepik: 'freepik',
         rawpixel: 'rawpixel',
-        unsplash: 'unsplash',
-        stocksnap: 'stocksnap'
+        unsplash: 'unsplash',   // não existe no array; cai no fallback sem repetir
+        stocksnap: 'stocksnap'  // idem
       };
 
+      // Seleciona só os 9 cards laterais (.i) e pula o central (Facebook)
       const cards = document.querySelectorAll('#images .image.i');
-      const used = new Set();
-      let highPrioBudget = 2;
+
+      const used = new Set(); // garante que não repete imagem
+      let highPrioBudget = 2; // dois primeiros com prioridade alta
       cards.forEach((card) => {
         const title = (card.querySelector('.title')?.textContent || '').trim().toLowerCase();
         const hint = TITLE_HINT[title] || title;
 
+        // 1) tenta casar pelo hint no src
         let match = localItems.find(it => !used.has(it.src) && it.src.toLowerCase().includes(hint));
+
+        // 2) se não achar (ex.: Unsplash/StockSnap), pega a próxima não usada
         if (!match) match = localItems.find(it => !used.has(it.src));
+
+        // 3) último recurso: usa o último item (ainda evita vazio)
         if (!match) match = localItems[localItems.length - 1];
+
         used.add(match.src);
 
         const imgEl  = card.querySelector('img');
         const descEl = card.querySelector('.desc');
 
         if (imgEl) {
+          // alta prioridade nos dois primeiros; demais ficam padrão
           if (highPrioBudget > 0) {
             imgEl.setAttribute('fetchpriority', 'high');
             imgEl.loading  = 'eager';
@@ -428,9 +381,10 @@ async function loadImg(word) {
             imgEl.loading  = 'lazy';
           }
           imgEl.decoding = 'async';
-          imgEl.src = match.src;
+          imgEl.src = match.src; // navegador deve usar cache aquecido (se houver)
         }
 
+        // Prioridade: caption → fallback por palavra → nome de arquivo "bonitinho"
         const text = (match.caption && match.caption.trim())
           ? match.caption.trim()
           : (DEFAULT_STATIC_TAGS[searchTerm] || prettyFromFilename(match.src));
@@ -440,7 +394,7 @@ async function loadImg(word) {
       return; // não chama API
     }
 
-    // 2) Fluxo normal de APIs
+    // 2) (SE não houver local) segue fluxo normal de APIs
     const wantsAnimal = isAnimalIntent(searchTerm);
 
     if (["gato", "gata", "gatinho", "gatinha"].includes(searchTerm)) {
@@ -531,10 +485,12 @@ function bindWordCards(){
   document.querySelectorAll('#word-container .item.word').forEach(box => {
     const dt = box.getAttribute('data-type') || '';
 
+    // Aquecer 2–3 imagens da categoria ao detectar intenção (desktop e mobile)
     const prime = () => warmCategory(dt, 3);
-    box.addEventListener('pointerenter', prime, { passive: true });
-    box.addEventListener('touchstart',  prime, { passive: true });
+    box.addEventListener('pointerenter', prime, { passive: true }); // hover (desktop)
+    box.addEventListener('touchstart',  prime, { passive: true });  // encostar (mobile)
 
+    // Clique: troca UI + abre câmera + popula cards
     const onPick = (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -548,12 +504,14 @@ function bindSendButton(){
   const inputEl = document.querySelector('#wordinput');
   const btnEl = document.querySelector('#wordbtn');
 
+  // Clique no botão
   btnEl?.addEventListener('click', (e) => {
     e.preventDefault();
     const val = (inputEl?.value || '').toLowerCase().trim();
     updateUIWithWord(val);
   });
 
+  // Pressionar Enter/Retorno faz o mesmo
   inputEl?.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault();
@@ -574,7 +532,7 @@ function bindBtnTudo() {
     const termo = (window.word && window.word.trim()) || (input?.value || '').trim();
     const q = encodeURIComponent(termo);
     const destino = q ? `https://www.google.com/search?q=${q}` : 'https://www.google.com/';
-    location.replace(destino);
+    location.replace(destino); // substitui a entrada no histórico
   });
 }
 
@@ -589,17 +547,22 @@ function bindBtnImagens() {
     const input = document.querySelector('.D0h3Gf') || document.getElementById('wordinput');
     const termo = (window.word && window.word.trim()) || (input?.value || '').trim();
     const q = encodeURIComponent(termo);
+    // tbm=isch ativa a aba de imagens; fallback para home do Google Images
     const destino = q
       ? `https://www.google.com/search?tbm=isch&q=${q}`
       : 'https://www.google.com/imghp';
-    location.replace(destino);
+    location.replace(destino); // substitui a entrada no histórico
   });
 }
 
 /* ===== Evita que os links do menu adicionem "#" ao histórico ===== */
 function disableMenuHashLinks() {
+  // seleciona todos os links do menu (classe usada no HTML: .NZmxZe)
   document.querySelectorAll('.NZmxZe').forEach(a => {
+    // deixa passar os dois botões que já têm handlers próprios
     if (a.id === 'btn-tudo' || a.id === 'btn-imagens') return;
+
+    // previne default (não altera URL nem empurra estado no histórico)
     a.addEventListener('click', function(e) {
       e.preventDefault();
       e.stopPropagation();
@@ -612,178 +575,10 @@ function init(){
   specImg = document.querySelector('#spec-pic');
   bindWordCards();
   bindSendButton();
-  bindBtnTudo();
-  bindBtnImagens();
-  disableMenuHashLinks();
+  bindBtnTudo();     // ativa o "Tudo"
+  bindBtnImagens();  // ativa o "Imagens"
+  disableMenuHashLinks(); // 👈 evita o "#" do histórico
 }
 
 window.addEventListener('load', init, false);
-
-/* ============================================================
-   KEEP-AWAKE (iOS/Safari 2025)
-   Estratégia: Wake Lock -> <canvas>→<video> invisível
-   Reforços: timer periódico + visibilitychange + gestos reais
-   Integrações: openCameraOverlay / shutterPress
-   Requer: HTTPS para Wake Lock
-   ============================================================ */
-
-(() => {
-  const KeepAwake = (() => {
-    let wakeLock = null;
-    let hiddenVideo = null;
-    let canvas = null;
-    let rafId = null;
-    let armed = false;
-    let tickTimer = null;
-
-    // ——— Wake Lock (HTTPS + suporte do browser)
-    async function tryWakeLock() {
-      if (!('wakeLock' in navigator)) return false;
-      try {
-        wakeLock = await navigator.wakeLock.request('screen');
-        return true;
-      } catch {
-        return false;
-      }
-    }
-
-    // ——— Fallback: <canvas> -> MediaStream -> <video> invisível
-    function startCanvasVideo() {
-      if (hiddenVideo) return true;
-
-      canvas = document.createElement('canvas');
-      canvas.width = 2; canvas.height = 2;
-      const ctx = canvas.getContext('2d', { willReadFrequently: false });
-
-      const tick = () => {
-        ctx.fillStyle = '#000';
-        ctx.fillRect(0, 0, 2, 2);  // gera frame “negro”
-        rafId = requestAnimationFrame(tick);
-      };
-      tick();
-
-      hiddenVideo = document.createElement('video');
-      hiddenVideo.playsInline = true;
-      hiddenVideo.muted = true;
-      hiddenVideo.autoplay = true;
-      hiddenVideo.loop = true;
-      hiddenVideo.style.cssText = 'position:absolute;width:0;height:0;opacity:0;pointer-events:none;';
-      hiddenVideo.setAttribute('aria-hidden', 'true');
-
-      const stream = canvas.captureStream?.(1); // compat Safari: use canvas, não mediaElement
-      if (!stream) return false; // browsers muito antigos
-      hiddenVideo.srcObject = stream;
-      document.body.appendChild(hiddenVideo);
-
-      const p = hiddenVideo.play();
-      if (p && typeof p.then === 'function') {
-        p.catch(() => {
-          // se o autoplay ainda estiver bloqueado, armamos no próximo gesto real
-          armOneShotGesture(() => hiddenVideo.play().catch(() => {}));
-        });
-      }
-      return true;
-    }
-
-    function stopCanvasVideo() {
-      try { if (rafId) cancelAnimationFrame(rafId); } catch {}
-      rafId = null;
-
-      try {
-        if (hiddenVideo) {
-          hiddenVideo.pause();
-          hiddenVideo.srcObject?.getTracks?.().forEach(t => t.stop());
-          hiddenVideo.remove();
-        }
-      } catch {}
-      hiddenVideo = null;
-
-      try { if (canvas) { canvas.width = 0; canvas.height = 0; } } catch {}
-      canvas = null;
-    }
-
-    // ——— (Re)armar com um gesto real (toque/clique/tecla)
-    function armOneShotGesture(fn) {
-      const once = () => {
-        document.removeEventListener('touchstart', once);
-        document.removeEventListener('click', once);
-        document.removeEventListener('keydown', once);
-        try { fn(); } catch {}
-      };
-      document.addEventListener('touchstart', once, { once: true, passive: true });
-      document.addEventListener('click', once, { once: true, passive: true });
-      document.addEventListener('keydown', once, { once: true });
-    }
-
-    // ——— “Poke”: reforça periodicamente (25s) e quando voltar ao foco
-    function startTick() {
-      clearInterval(tickTimer);
-      tickTimer = setInterval(() => {
-        // Se Wake Lock caiu, tenta de novo; senão reforça o vídeo
-        if (!wakeLock) tryWakeLock();
-        if (hiddenVideo) hiddenVideo.play().catch(() => {});
-      }, 25000);
-    }
-
-    function stopTick() { clearInterval(tickTimer); tickTimer = null; }
-
-    async function enable(reason = 'auto') {
-      if (armed) return;
-      armed = true;
-
-      // 1) tenta Wake Lock
-      const ok = await tryWakeLock();
-      if (!ok) {
-        // 2) fallback robusto
-        startCanvasVideo();
-      }
-
-      // 3) rearmadores
-      startTick();
-    }
-
-    function disable() {
-      armed = false;
-      try { wakeLock?.release?.(); } catch {}
-      wakeLock = null;
-      stopTick();
-      stopCanvasVideo();
-    }
-
-    // Requisita novamente ao voltar para a aba/app
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') {
-        enable('visible');
-      }
-    });
-
-    return { enable, disable, armOneShotGesture };
-  })();
-
-  // ——— ativa na entrada do site
-  window.addEventListener('load', () => {
-    KeepAwake.enable('onload');
-    // se o autoplay for bloqueado inicialmente, re-arma no 1º gesto real
-    KeepAwake.armOneShotGesture(() => KeepAwake.enable('gesture'));
-  }, { once: true });
-
-  // ——— reforça ao abrir a câmera e ao tirar a foto (hooks)
-  try {
-    if (typeof openCameraOverlay === 'function') {
-      const __openCameraOverlay = openCameraOverlay;
-      window.openCameraOverlay = async function () {
-        KeepAwake.enable('camera-open');
-        return __openCameraOverlay.apply(this, arguments);
-      };
-    }
-    if (typeof shutterPress === 'function') {
-      const __shutterPress = shutterPress;
-      window.shutterPress = async function () {
-        KeepAwake.enable('shutter');
-        return __shutterPress.apply(this, arguments);
-      };
-    }
-  } catch {}
-})();
-
 
