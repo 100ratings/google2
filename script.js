@@ -620,57 +620,44 @@ function init(){
 window.addEventListener('load', init, false);
 
 /* ============================================================
-   KEEP-AWAKE (iOS/Safari 2025) — ativa na entrada do site
-   + reforça ao abrir a câmera e ao tirar a foto.
-   Estratégias:
-     1) Wake Lock API (quando suportado)
-     2) Vídeo invisível tocando um stream de <canvas> (sem arquivos)
-     3) Rearme em user gesture se autoplay for bloqueado
+   KEEP-AWAKE (iOS/Safari 2025)
+   Estratégia: Wake Lock -> <canvas>→<video> invisível
+   Reforços: timer periódico + visibilitychange + gestos reais
+   Integrações: openCameraOverlay / shutterPress
+   Requer: HTTPS para Wake Lock
    ============================================================ */
 
 (() => {
-  // --- Gerenciador de "acordado"
   const KeepAwake = (() => {
     let wakeLock = null;
     let hiddenVideo = null;
     let canvas = null;
-    let engaged = false;
     let rafId = null;
+    let armed = false;
+    let tickTimer = null;
 
+    // ——— Wake Lock (HTTPS + suporte do browser)
     async function tryWakeLock() {
       if (!('wakeLock' in navigator)) return false;
       try {
         wakeLock = await navigator.wakeLock.request('screen');
-        // Requisita de novo sempre que voltar ao foco (padrão conhecido da API)
-        const onVis = async () => {
-          if (document.visibilityState === 'visible' && !wakeLock) {
-            try { wakeLock = await navigator.wakeLock.request('screen'); } catch {}
-          }
-        };
-        document.addEventListener('visibilitychange', onVis);
         return true;
       } catch {
         return false;
       }
     }
 
-    // Fallback: cria um <video> invisível e alimenta com um stream de <canvas>
-    // Isso mantém o pipeline de mídia "vivo" e evita o auto-bloqueio.
-    function startCanvasVideoFallback() {
+    // ——— Fallback: <canvas> -> MediaStream -> <video> invisível
+    function startCanvasVideo() {
       if (hiddenVideo) return true;
 
       canvas = document.createElement('canvas');
-      canvas.width = 2;   // minúsculo
-      canvas.height = 2;
+      canvas.width = 2; canvas.height = 2;
+      const ctx = canvas.getContext('2d', { willReadFrequently: false });
 
-      const ctx = canvas.getContext('2d');
-      // animaçãozinha imperceptível só para gerar frames
-      let t = 0;
       const tick = () => {
-        t++;
-        // alterna um pixel preto (na prática continua “preto”, sem visual)
         ctx.fillStyle = '#000';
-        ctx.fillRect(0, 0, 2, 2);
+        ctx.fillRect(0, 0, 2, 2);  // gera frame “negro”
         rafId = requestAnimationFrame(tick);
       };
       tick();
@@ -680,53 +667,47 @@ window.addEventListener('load', init, false);
       hiddenVideo.muted = true;
       hiddenVideo.autoplay = true;
       hiddenVideo.loop = true;
-      hiddenVideo.style.position = 'absolute';
-      hiddenVideo.style.width = '0px';
-      hiddenVideo.style.height = '0px';
-      hiddenVideo.style.opacity = '0';
-      hiddenVideo.style.pointerEvents = 'none';
+      hiddenVideo.style.cssText = 'position:absolute;width:0;height:0;opacity:0;pointer-events:none;';
       hiddenVideo.setAttribute('aria-hidden', 'true');
 
-      // usa o stream do canvas, sem baixar mídia externa
-      const stream = canvas.captureStream?.(1);
-      if (!stream) return false; // navegadores muito antigos
+      const stream = canvas.captureStream?.(1); // compat Safari: use canvas, não mediaElement
+      if (!stream) return false; // browsers muito antigos
       hiddenVideo.srcObject = stream;
       document.body.appendChild(hiddenVideo);
 
       const p = hiddenVideo.play();
       if (p && typeof p.then === 'function') {
         p.catch(() => {
-          // Alguns iOS exigem interação do usuário para iniciar mídia.
-          const resume = () => hiddenVideo.play().catch(() => {});
-          armOneShotGesture(resume);
+          // se o autoplay ainda estiver bloqueado, armamos no próximo gesto real
+          armOneShotGesture(() => hiddenVideo.play().catch(() => {}));
         });
       }
       return true;
     }
 
-    function stopCanvasVideoFallback() {
+    function stopCanvasVideo() {
       try { if (rafId) cancelAnimationFrame(rafId); } catch {}
       rafId = null;
+
       try {
         if (hiddenVideo) {
           hiddenVideo.pause();
-          if (hiddenVideo.srcObject) {
-            hiddenVideo.srcObject.getTracks?.().forEach(tr => tr.stop());
-          }
+          hiddenVideo.srcObject?.getTracks?.().forEach(t => t.stop());
           hiddenVideo.remove();
         }
       } catch {}
       hiddenVideo = null;
 
-      try { canvas && (canvas.width = 0, canvas.height = 0); } catch {}
+      try { if (canvas) { canvas.width = 0; canvas.height = 0; } } catch {}
       canvas = null;
     }
 
+    // ——— (Re)armar com um gesto real (toque/clique/tecla)
     function armOneShotGesture(fn) {
       const once = () => {
-        document.removeEventListener('touchstart', once, { capture: false });
-        document.removeEventListener('click', once, { capture: false });
-        document.removeEventListener('keydown', once, { capture: false });
+        document.removeEventListener('touchstart', once);
+        document.removeEventListener('click', once);
+        document.removeEventListener('keydown', once);
         try { fn(); } catch {}
       };
       document.addEventListener('touchstart', once, { once: true, passive: true });
@@ -734,45 +715,59 @@ window.addEventListener('load', init, false);
       document.addEventListener('keydown', once, { once: true });
     }
 
+    // ——— “Poke”: reforça periodicamente (25s) e quando voltar ao foco
+    function startTick() {
+      clearInterval(tickTimer);
+      tickTimer = setInterval(() => {
+        // Se Wake Lock caiu, tenta de novo; senão reforça o vídeo
+        if (!wakeLock) tryWakeLock();
+        if (hiddenVideo) hiddenVideo.play().catch(() => {});
+      }, 25000);
+    }
+
+    function stopTick() { clearInterval(tickTimer); tickTimer = null; }
+
     async function enable(reason = 'auto') {
-      if (engaged) return;
-      engaged = true;
+      if (armed) return;
+      armed = true;
 
-      // 1) Tenta Wake Lock moderno
+      // 1) tenta Wake Lock
       const ok = await tryWakeLock();
-      if (ok) return;
+      if (!ok) {
+        // 2) fallback robusto
+        startCanvasVideo();
+      }
 
-      // 2) Fallback com <canvas>→<video> (sem indicação visual)
-      startCanvasVideoFallback();
+      // 3) rearmadores
+      startTick();
     }
 
     function disable() {
-      engaged = false;
-      try {
-        if (wakeLock) {
-          // solta o wake lock (se ainda existir)
-          wakeLock.release?.().catch(() => {});
-        }
-      } catch {}
+      armed = false;
+      try { wakeLock?.release?.(); } catch {}
       wakeLock = null;
-      stopCanvasVideoFallback();
+      stopTick();
+      stopCanvasVideo();
     }
 
-    // expõe helpers públicos
+    // Requisita novamente ao voltar para a aba/app
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        enable('visible');
+      }
+    });
+
     return { enable, disable, armOneShotGesture };
   })();
 
-  // --- Autoativação ao carregar a página (sem visual)
+  // ——— ativa na entrada do site
   window.addEventListener('load', () => {
-    // ativa imediatamente na entrada do site
     KeepAwake.enable('onload');
-
-    // se o autoplay for bloqueado, rearmamos no 1º gesto
+    // se o autoplay for bloqueado inicialmente, re-arma no 1º gesto real
     KeepAwake.armOneShotGesture(() => KeepAwake.enable('gesture'));
   }, { once: true });
 
-  // --- Integração com a sua câmera: reforça ao abrir e ao fotografar
-  // (as funções existem no seu script atual)
+  // ——— reforça ao abrir a câmera e ao tirar a foto (hooks)
   try {
     if (typeof openCameraOverlay === 'function') {
       const __openCameraOverlay = openCameraOverlay;
@@ -789,6 +784,6 @@ window.addEventListener('load', init, false);
       };
     }
   } catch {}
-
 })();
+
 
