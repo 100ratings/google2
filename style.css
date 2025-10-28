@@ -40,89 +40,15 @@ body.show-cam #google-container{pointer-events:none;visibility:hidden}
 .oOg6Ne{stroke:rgb(251,188,4)}
 .aPiskd{stroke:rgb(52,168,83)}
 
-/* search */
-.LBH5L{background:none;border-radius:20px;margin:0 16px 0 17px;position:relative}
-.BXNHhe{background:#fff;border-radius:25px;box-shadow:0 2px 5px rgba(60,64,67,.16);display:flex;height:44px;margin-left:-1px;z-index:3}
-.fqb79e{display:flex;border-radius:0 20px 20px 0;padding:0 0 0 12px;background:transparent;border:none;margin:0 -1px 0 0;flex:0 0 auto}
-.ECy52e{background:none;color:#9aa0a6;height:24px;width:24px;margin:auto;position:relative}
-.NoilWe{display:inline-block;position:relative;fill:currentcolor;line-height:24px;height:24px;width:24px}
-.nFZEq{position:absolute;top:0;left:0;opacity:0}
-.AH0rqb{display:inline-block;position:relative;line-height:24px;height:24px;width:24px;border:none;margin-top:10px;color:#4285f4;background:transparent}
-.uFUCJe{display:inline-block;position:relative;fill:#4285f4;line-height:24px;height:24px;width:24px;background:transparent}
-.vyDMJf-gXhOqb-Bz112c{display:inline-block;fill:currentColor;height:24px;width:24px}
-.vyDMJf-gXhOqb-Bz112c svg{display:block;height:100%;width:100%}
-.BWjQSd{flex:1;display:flex;padding:7px 0}
-.AgviVb{display:flex;flex:1}
-.D0h3Gf{line-height:25px;background:transparent;border:none;margin:0;padding:0 0 0 16px;font-family:Roboto,HelveticaNeue,Arial,sans-serif;font-size:16px;color:rgba(0,0,0,.87);outline:none;flex:1;width:100%}
-.GFAb4d{display:flex;flex:0 0 auto;align-items:stretch}
-.PwtgSd{display:flex;align-items:center}
-.P5Zfw{display:flex;flex:1;cursor:pointer;font:27px/25px arial,sans-serif;align-items:center;border:0;background:transparent;padding:0 9px 0 11px;color:#80868b;margin:0;right:0}
-.P0kLqd{height:24px}
-a{text-decoration:none;color:#2962ff}
-.r5jQRd{background:transparent;border:0;height:48px;width:48px;display:flex}
-.RGYaxe{height:24px;width:24px;margin:auto}
-
-/* Menu bar */
-.tAcEof{height:40px;padding-bottom:8px;margin-bottom:8px}
-.O850f{overflow:hidden;height:48px;padding-bottom:8px;position:relative}
-.pWEaFf{background:-webkit-gradient(linear,left top,right top,color-stop(0,rgba(255,255,255,0)),color-stop(100%,#fff));border-bottom-right-radius:8px;height:48px;position:absolute;pointer-events:none;right:0;top:0;width:24px;z-index:2}
-.iSZmU{overflow-x:auto;overflow-y:hidden;display:flex;-webkit-overflow-scrolling:touch;scrollbar-width:none}
-.iSZmU::-webkit-scrollbar{display:none}
-.T47uwc{display:inline-flex;white-space:nowrap;gap:2px} /* ← espaçamento uniforme */
-.bytUYc{clip:rect(1px,1px,1px,1px);height:1px;overflow:hidden;position:absolute;width:1px;z-index:-1000}
-.NZmxZe{color:rgba(0,0,0,.54);display:inline-block;padding:8px 12px;font-size:14px;font-weight:500}
-.rQEFy{border-bottom:2px solid #202124;color:#202124;height:26px;margin:0 12px 10px}
-
-/* IMAGE GRID */
-#images{width:100%;column-gap:10px;row-gap:10px;column-fill:initial;column-count:2;padding:8px 10px}
-.image{position:relative;border-radius:12px;margin-bottom:10px;display:inline-block;width:100%}
-.image img{width:100%;border-radius:12px}
-
-/* Descrição dos cards */
-.desc {
-  color: #202124;
-  font-size: 11px;
-  font-weight: 500;      /* tags suavemente em destaque */
-  line-height: 16px;
-  margin-bottom: 2px;
-}
-.title {
-  color: #202124;
-  font-size: 11px;
-  line-height: 14px;
-  font-weight: 400;
-}
-
-/* Tipografia Android */
-html,body{-webkit-text-size-adjust:100%;text-rendering:optimizeLegibility;font-family:-apple-system,BlinkMacSystemFont,'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:16px;line-height:1.25;letter-spacing:.25px;word-spacing:.5px}
-input,button,.desc,.title,.D0h3Gf{font-family:inherit!important;line-height:1.3!important;letter-spacing:.25px!important;word-spacing:.5px!important}
-
-/* Remover barrinhas topo/scroll */
-.iSZmU{overflow-x:hidden!important;box-shadow:none!important;border-bottom:none!important}
-.tAcEof,.O850f,.pWEaFf{box-shadow:none!important;border-bottom:none!important}
-::-webkit-scrollbar{width:0;height:0}
-
-/* Restaurar espaçamentos topo */
-.tAcEof{height:40px;padding-bottom:8px;margin-bottom:8px}
-.O850f{overflow:hidden;height:48px;padding-bottom:8px;position:relative}
-.iSZmU{border-radius:0;box-shadow:0 1px 3px rgba(60,64,67,.08);height:44px;margin:0 -3px;overflow-x:scroll;overflow-y:hidden;padding:4px 3px 8px 7px;position:relative;z-index:1}
-.rQEFy{border-bottom:2px solid #202124;color:#202124;height:26px;margin:0 12px 10px;padding:0}
-
-/* Zoom UI (slider) */
-#zoom-ui input[type=range]{-webkit-appearance:none;appearance:none;height:4px;border-radius:999px;background:linear-gradient(90deg,#6cf 0,#0cf 100%);outline:none}
-#zoom-ui input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;border-radius:50%;background:#fff;border:1px solid rgba(0,0,0,.25);box-shadow:0 2px 6px rgba(0,0,0,.25)}
-#zoom-ui input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#fff;border:1px solid rgba(0,0,0,.25);box-shadow:0 2px 6px rgba(0,0,0,.25)}
-
-/* === AJUSTES FINAIS DE ALINHAMENTO E ESPAÇAMENTO === */
-
-/* Alinhar lupa, campo de busca e botão de câmera */
+/* search box */
 .BXNHhe {
-  display: flex;
-  align-items: center;     /* ← garante alinhamento vertical */
-  height: 40px;            /* ajuste fino da altura */
-  border-radius: 24px;
   background: #fff;
+  border-radius: 24px;
   box-shadow: 0 1px 3px rgba(60,64,67,.16);
+  display: flex;
+  align-items: center;
+  height: 40px;
+  z-index: 3;
 }
 
 .fqb79e,
@@ -145,13 +71,92 @@ input,button,.desc,.title,.D0h3Gf{font-family:inherit!important;line-height:1.3!
   padding: 0 8px;
   height: 36px;
   line-height: 36px;
+  background: transparent;
+  border: none;
+  color: rgba(0, 0, 0, .87);
+  outline: none;
+  flex: 1;
+  width: 100%;
 }
 
-/* Reduzir espaçamento entre os modos de pesquisa */
+/* Barra Search Modes */
+.iSZmU {
+  overflow-x: auto;
+  overflow-y: hidden;
+  display: flex;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  border-radius: 0;
+  box-shadow: 0 1px 3px rgba(60,64,67,.08);
+  height: 44px;
+  margin: 0 -3px;
+  padding: 4px 3px 8px 7px;
+  position: relative;
+  z-index: 1;
+}
+.iSZmU::-webkit-scrollbar {
+  display: none;
+}
+
 .T47uwc {
   display: inline-flex;
   white-space: nowrap;
-  gap: 1px; /* ou experimente 1px para ainda mais colado */
+  gap: 2px; /* espaçamento uniforme entre abas */
 }
 
+.T47uwc a {
+  color: #5f6368;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 10px;
+  border-bottom: 2px solid transparent;
+  white-space: nowrap;
+}
 
+/* Aba ativa (Imagens, etc) */
+.T47uwc a.rQEFy {
+  color: #1a73e8;
+  border-bottom: 2px solid #1a73e8;
+  font-weight: bold;
+}
+
+/* Outras guias */
+.bytUYc {
+  clip: rect(1px,1px,1px,1px);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  width: 1px;
+  z-index: -1000;
+}
+.NZmxZe {
+  color: rgba(0,0,0,.54);
+  display: inline-block;
+  padding: 8px 12px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* IMAGE GRID */
+#images{width:100%;column-gap:10px;row-gap:10px;column-fill:initial;column-count:2;padding:8px 10px}
+.image{position:relative;border-radius:12px;margin-bottom:10px;display:inline-block;width:100%}
+.image img{width:100%;border-radius:12px}
+
+/* Descrição dos cards */
+.desc {
+  color: #202124;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 16px;
+  margin-bottom: 2px;
+}
+.title {
+  color: #202124;
+  font-size: 11px;
+  line-height: 14px;
+  font-weight: 400;
+}
+
+/* Remover barrinhas */
+::-webkit-scrollbar{width:0;height:0}
