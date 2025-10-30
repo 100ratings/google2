@@ -193,6 +193,7 @@ async function loadImg(w){
 }
 
 function updateUIWithWord(newWord){
+  window.scrollTo(0, 0); // 🧽 força o scroll para o topo
   word=(newWord||"").trim();
   document.querySelector("#word-container")?.remove();
   const q=document.querySelector(".D0h3Gf"); if(q) q.value=word;
@@ -255,3 +256,4 @@ function init(){
 }
 
 window.addEventListener("load",init,false);
+
