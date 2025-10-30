@@ -192,13 +192,27 @@ async function loadImg(w){
   }
 }
 
-function updateUIWithWord(newWord){
-  window.scrollTo(0, 0); // 🧽 força o scroll para o topo
-  word=(newWord||"").trim();
+function updateUIWithWord(newWord) {
+  word = (newWord || "").trim();
+
+  // ⏳ Aguarda o teclado fechar antes de rolar para o topo
+  setTimeout(() => {
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }, 100); // pequeno delay (ajuste se necessário)
+
+  // Remove a tela de escolha de palavra
   document.querySelector("#word-container")?.remove();
-  const q=document.querySelector(".D0h3Gf"); if(q) q.value=word;
-  document.querySelectorAll("span.word").forEach(s=>s.textContent=word);
-  loadImg(word); openCameraOverlay();
+
+  // Preenche o campo de busca com a palavra
+  const q = document.querySelector(".D0h3Gf");
+  if (q) q.value = word;
+
+  // Atualiza todas as palavras visíveis
+  document.querySelectorAll("span.word").forEach(s => s.textContent = word);
+
+  // Carrega imagens e abre câmera
+  loadImg(word);
+  openCameraOverlay();
 }
 
 function bindWordCards(){
@@ -256,4 +270,5 @@ function init(){
 }
 
 window.addEventListener("load",init,false);
+
 
