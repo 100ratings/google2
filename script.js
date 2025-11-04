@@ -265,14 +265,14 @@ function init(){
 
 window.addEventListener("load",init,false);
 
-/** 📸 LIGHTBOX / ZOOM DE IMAGEM **/
+// 📸 LIGHTBOX / ZOOM DE IMAGEM
 window.addEventListener("load", () => {
   const viewer = document.getElementById("img-viewer");
   const viewerImg = document.getElementById("img-viewer-img");
   const viewerClose = document.getElementById("img-viewer-close");
   const viewerBg = document.getElementById("img-viewer-bg");
+  const spec = document.getElementById("spec-pic");
 
-  // Função para abrir o zoom com a imagem clicada
   function openViewer(src) {
     viewerImg.src = src;
     viewer.style.display = "flex";
@@ -280,29 +280,26 @@ window.addEventListener("load", () => {
 
   function closeViewer() {
     viewer.style.display = "none";
-    viewerImg.src = ""; // limpa
+    viewerImg.src = "";
   }
 
-  // Clicar na foto tirada pela câmera
-  const spec = document.getElementById("spec-pic");
+  // 🖼️ Clicar na foto tirada pela câmera
   if (spec) {
-spec?.addEventListener("click", () => {
-  if (justTookPhoto) return; // impede conflito
-  if (spec.src && spec.style.display !== "none") openViewer(spec.src);
-});
+    spec.addEventListener("click", () => {
+      if (justTookPhoto) return; // evita conflito após foto
+      if (spec.src && spec.style.display !== "none") openViewer(spec.src);
+    });
+  }
 
-  // Clicar em QUALQUER imagem da grade
-document.querySelectorAll("#images .image img").forEach(img => {
-  img.addEventListener("click", () => {
-    if (justTookPhoto) return; // impede bug após foto
-    if (img.src) openViewer(img.src);
+  // 🖼️ Clicar em QUALQUER imagem da grade
+  document.querySelectorAll("#images .image img").forEach(img => {
+    img.addEventListener("click", () => {
+      if (justTookPhoto) return; // impede bug após foto
+      if (img.src) openViewer(img.src);
+    });
   });
-});
 
-  // Fechar ao clicar no fundo ou no X
+  // ❌ Fechar ao clicar no fundo ou no X
   viewerBg.addEventListener("click", closeViewer);
   viewerClose.addEventListener("click", closeViewer);
 });
-
-
-
