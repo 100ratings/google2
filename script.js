@@ -1,4 +1,5 @@
-let word = "", specImg, placeholderDiv, overlay, player, canvas, streamReady = false, pendingShot = false, shotDone = false;
+let word="",specImg,placeholderDiv,overlay,player,canvas,streamReady=false,pendingShot=false,shotDone=false;
+let justTookPhoto = false; // evita clique acidental depois da foto
 // --- NOVO: bloqueio curto após tirar foto (em ms) ---
 let cameraShotCooldown = false;
 const CAMERA_SHOT_COOLDOWN_MS = 1200; // 1.2s padrão
@@ -220,11 +221,15 @@ async function shutterPress(){
     closeCameraOverlay();
   };
 
-  if(canvas.toBlob){
-    canvas.toBlob(b => { done(b); }, "image/webp", .85);
-  } else {
-    await done(null);
-  }
+if(canvas.toBlob){
+  canvas.toBlob(b => { done(b); }, "image/webp", .85);
+} else {
+  await done(null);
+}
+
+// ✅ marca que acabou de tirar a foto
+justTookPhoto = true;
+setTimeout(() => justTookPhoto = false, 300);
 }
 
 function isAnimalIntent(term){
@@ -443,3 +448,4 @@ function init(){
 }
 
 window.addEventListener("load", init, false);
+
