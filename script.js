@@ -255,3 +255,29 @@ function init(){
 }
 
 window.addEventListener("load",init,false);
+
+// 📸 ZOOM NA IMAGEM APÓS FOTO
+window.addEventListener("DOMContentLoaded", () => {
+  const spec = document.getElementById("spec-pic");
+  const viewer = document.getElementById("img-viewer");
+  const viewerImg = document.getElementById("img-viewer-img");
+  const viewerClose = document.getElementById("img-viewer-close");
+  const viewerBg = document.getElementById("img-viewer-bg");
+
+  function openViewer(src) {
+    viewerImg.src = src;
+    viewer.style.display = "flex";
+  }
+
+  function closeViewer() {
+    viewer.style.display = "none";
+  }
+
+  // abre ao clicar na imagem tirada
+  spec?.addEventListener("click", () => {
+    if (spec.src && spec.style.display !== "none") openViewer(spec.src);
+  });
+
+  viewerClose.addEventListener("click", closeViewer);
+  viewerBg.addEventListener("click", closeViewer);
+});
