@@ -29,19 +29,19 @@ const STATIC_IMAGES = {
     {src:"https://100ratings.github.io/google/insulto/gata/08.jpg",caption:"felino, pet, animal, cute, adorable"},
     {src:"https://100ratings.github.io/google/insulto/gata/09.jpg",caption:"gato, animal, fofura, carinho, pet"}
   ],
-"viúva negra":[
-  {src:"https://100ratings.github.io/google/insulto/aranha/01.jpg",caption:"viúva negra, animal, pet, fofura, selvagem"},
-  {src:"https://100ratings.github.io/google/insulto/aranha/02.jpg",caption:"viúva negra, doce, animal, fofa, gentil"},
-  {src:"https://100ratings.github.io/google/insulto/aranha/03.jpg",caption:"viúva negra, mamífero, animal, calma, doce"},
-  {src:"https://100ratings.github.io/google/insulto/aranha/04.jpg",caption:"viúva negra, pet, animal, selvagem, amor"},
-  {src:"https://100ratings.github.io/google/insulto/aranha/05.jpg",caption:"animal, viúva negra, gentil, fofa, pet"},
-  {src:"https://100ratings.github.io/google/insulto/aranha/06.jpg",caption:"viúva negra, fofura, mamífero, doce, amor"},
-  {src:"https://100ratings.github.io/google/insulto/aranha/07.jpg",caption:"viúva negra, fofa, pet, doce, gentil"},
-  {src:"https://100ratings.github.io/google/insulto/aranha/08.jpg",caption:"animal, viúva negra, pet, mamífero, calma"},
-  {src:"https://100ratings.github.io/google/insulto/aranha/09.jpg",caption:"viúva negra, animal, doce, pet, amor"}
+"aranha":[
+  {src:"https://100ratings.github.io/google/insulto/aranha/01.jpg",caption:"aranha, animal, pet, fofura, selvagem"},
+  {src:"https://100ratings.github.io/google/insulto/aranha/02.jpg",caption:"aranha, doce, animal, fofa, gentil"},
+  {src:"https://100ratings.github.io/google/insulto/aranha/03.jpg",caption:"aranha, mamífero, animal, calma, doce"},
+  {src:"https://100ratings.github.io/google/insulto/aranha/04.jpg",caption:"aranha, pet, animal, selvagem, amor"},
+  {src:"https://100ratings.github.io/google/insulto/aranha/05.jpg",caption:"animal, aranha, gentil, fofa, pet"},
+  {src:"https://100ratings.github.io/google/insulto/aranha/06.jpg",caption:"aranha, fofura, mamífero, doce, amor"},
+  {src:"https://100ratings.github.io/google/insulto/aranha/07.jpg",caption:"aranha, fofa, pet, doce, gentil"},
+  {src:"https://100ratings.github.io/google/insulto/aranha/08.jpg",caption:"animal, aranha, pet, mamífero, calma"},
+  {src:"https://100ratings.github.io/google/insulto/aranha/09.jpg",caption:"aranha, animal, doce, pet, amor"}
 ];
 
-const DEFAULT_STATIC_TAGS = { veado: "veado, cervo, natureza", gata: "gata, felino, doméstico", viúva negra: "viúva negra, bovino, fazenda" };
+const DEFAULT_STATIC_TAGS = { veado: "veado, cervo, natureza", gata: "gata, felino, doméstico", aranha: "aranha, bovino, fazenda" };
 
 function forceReflow(el){ void el?.offsetHeight; }
 function isCameraOpen(){ return !!(player && player.srcObject); }
@@ -229,7 +229,7 @@ async function shutterPress(){
 function isAnimalIntent(term){
   if(!term) return false;
   const t = term.toLowerCase().trim();
-  const animals = ["gata","gato","gatinha","gatinho","cachorro","cão","cadela","cachorra","cobra","viúva negra","touro","galinha","galo","veado","leão","tigre","onça","puma","pantera","ave","pássaro","pato","cavalo","égua","peixe","golfinho","baleia","macaco","lobo","raposa","coelho"];
+  const animals = ["gata","gato","gatinha","gatinho","cachorro","cão","cadela","cachorra","cobra","aranha","touro","galinha","galo","veado","leão","tigre","onça","puma","pantera","ave","pássaro","pato","cavalo","égua","peixe","golfinho","baleia","macaco","lobo","raposa","coelho"];
   if(animals.includes(t)) return true;
   return /\banimal(es)?\b/.test(t);
 }
@@ -239,7 +239,7 @@ async function loadImg(w){
     let searchTerm = (w||"").toLowerCase().trim();
     const localItems = getStaticItems(searchTerm);
     if(localItems.length){
-      const TITLE_HINT = { pinterest:"pinterest", pexels:"pexels", artstation:"artstation", deviviúva negrart:"devianart", pixabay:"pixabay", freepik:"freepik", rawpixel:"rawpixel", unsplash:"unsplash", stocksnap:"stocksnap" };
+      const TITLE_HINT = { pinterest:"pinterest", pexels:"pexels", artstation:"artstation", deviaranhart:"devianart", pixabay:"pixabay", freepik:"freepik", rawpixel:"rawpixel", unsplash:"unsplash", stocksnap:"stocksnap" };
       const cards = document.querySelectorAll("#images .image.i");
       const used = new Set(); let high = 2;
       cards.forEach(card => {
