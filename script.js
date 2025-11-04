@@ -441,11 +441,28 @@ function bindImageClicks(){
 
 function init(){
   specImg = document.querySelector("#spec-pic");
-  bindWordCards(); bindSendButton(); bindBtnTudo(); bindBtnImagens(); disableMenuHashLinks();
+  bindWordCards();
+  bindSendButton();
+  bindBtnTudo();
+  bindBtnImagens();
+  disableMenuHashLinks();
 
   // liga o modal de imagens — importante: chamar depois de specImg definido
   try{ bindImageClicks(); }catch(e){ console.warn("bindImageClicks falhou:", e); }
+
+  // --- opcional: abrir imagens via openViewer (modo antigo) ---
+  document.querySelectorAll("#images .image img").forEach(img => {
+    img.addEventListener("click", () => {
+      if (justTookPhoto) return;
+      if (img.src) openViewer(img.src);
+    });
+  });
+
+  const spec = document.querySelector("#spec-pic");
+  spec?.addEventListener("click", () => {
+    if (justTookPhoto) return;
+    if (spec.src && spec.style.display !== "none") openViewer(spec.src);
+  });
 }
 
 window.addEventListener("load", init, false);
-
