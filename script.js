@@ -28,20 +28,20 @@ const STATIC_IMAGES = {
     {src:"https://100ratings.github.io/google/insulto/gata/08.jpg",caption:"felino, pet, animal, cute, adorable"},
     {src:"https://100ratings.github.io/google/insulto/gata/09.jpg",caption:"gato, animal, fofura, carinho, pet"}
   ],
-  aranha:[
-    {src:"https://100ratings.github.io/google/insulto/aranha/01.jpg",caption:"venenosa, aracnídeo, teia"},
-    {src:"https://100ratings.github.io/google/insulto/aranha/02.jpg",caption:"toxina, perigosa, predadora"},
-    {src:"https://100ratings.github.io/google/insulto/aranha/03.jpg",caption:"veneno potente, noturna, predadora"},
-    {src:"https://100ratings.github.io/google/insulto/aranha/04.jpg",caption:"teia, aracnídeo, perigosa"},
-    {src:"https://100ratings.github.io/google/insulto/aranha/05.jpg",caption:"venenosa, pequena, silenciosa"},
-    {src:"https://100ratings.github.io/google/insulto/aranha/06.jpg",caption:"comportamento predador, teia, venenosa"},
-    {src:"https://100ratings.github.io/google/insulto/aranha/07.jpg",caption:"toxina neurotóxica, perigosa, aracnídeo"},
-    {src:"https://100ratings.github.io/google/insulto/aranha/08.jpg",caption:"teia entrelaçada, predadora, noturna"},
-    {src:"https://100ratings.github.io/google/insulto/aranha/09.jpg",caption:"venenosa, observação, aracnídeo"}
+  vaca:[
+    {src:"https://100ratings.github.io/google/insulto/vaca/01.jpg",caption:"vaca, animal, pet, fofura, selvagem"},
+    {src:"https://100ratings.github.io/google/insulto/vaca/02.jpg",caption:"vaca, doce, animal, fofa, gentil"},
+    {src:"https://100ratings.github.io/google/insulto/vaca/03.jpg",caption:"vaca, mamífero, animal, calma, doce"},
+    {src:"https://100ratings.github.io/google/insulto/vaca/04.jpg",caption:"vaca, pet, animal, selvagem, amor"},
+    {src:"https://100ratings.github.io/google/insulto/vaca/05.jpg",caption:"animal, vaca, gentil, fofa, pet"},
+    {src:"https://100ratings.github.io/google/insulto/vaca/06.jpg",caption:"vaca, fofura, mamífero, doce, amor"},
+    {src:"https://100ratings.github.io/google/insulto/vaca/07.jpg",caption:"vaca, fofa, pet, doce, gentil"},
+    {src:"https://100ratings.github.io/google/insulto/vaca/08.jpg",caption:"animal, vaca, pet, mamífero, calma"},
+    {src:"https://100ratings.github.io/google/insulto/vaca/09.jpg",caption:"vaca, animal, doce, pet, amor"}
   ]
 };
 
-const DEFAULT_STATIC_TAGS = { veado: "veado, cervo, natureza", gata: "gata, felino, doméstico", aranha: "aranha, venenosa, tóxica" };
+const DEFAULT_STATIC_TAGS={veado:"veado, cervo, natureza",gata:"gata, felino, doméstico",vaca:"vaca, bovino, fazenda"};
 
 function forceReflow(el){ void el?.offsetHeight; }
 function isCameraOpen(){ return !!(player && player.srcObject); }
@@ -424,5 +424,6 @@ function init(){
 }
 
 window.addEventListener("load", init, false);
+
 
 
