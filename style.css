@@ -243,48 +243,24 @@ a{text-decoration:none;color:#2962ff}
   }
 }
 
-/* 🔍 Lightbox / Zoom de Imagem (cola no FINAL do style.css) */
-#img-viewer {
-  position: fixed;
-  inset: 0;                      /* top/right/bottom/left = 0 */
-  display: none;                 /* começa escondido */
-  align-items: center;           /* centraliza a imagem */
-  justify-content: center;
-  padding: 15px;
-  background: rgba(0,0,0,.85);   /* escurece o fundo */
-  z-index: 9999999;              /* fica acima de tudo */
-  -webkit-backdrop-filter: blur(0px); /* iOS: evita artefatos */
-  backdrop-filter: blur(0px);
-}
 
-#img-viewer img {
-  max-width: 95vw;               /* ocupa a largura da tela */
-  max-height: 90vh;              /* respeita a altura da tela */
-  object-fit: contain;           /* mantém proporção sem cortar */
-  border-radius: 12px;
-  background: #000;              /* fundo neutro (iOS ajuda) */
-  box-shadow: 0 0 30px rgba(0,0,0,.6);
-}
 
-#img-viewer-close {
-  position: fixed;
-  top: 12px;
-  right: 12px;
-  width: 40px;
-  height: 40px;
-  border: 0;
-  border-radius: 50%;
-  font-size: 28px;
-  line-height: 40px;
-  color: #fff;
-  background: rgba(0,0,0,.6);
-  cursor: pointer;
-}
 
-#img-viewer-bg {
-  position: absolute;
-  inset: 0;                      /* área clicável para fechar */
-}
 
-/* (opcional) cursor de zoom nas miniaturas */
-#images .image img { cursor: zoom-in; }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,5 +1,4 @@
 let word="",specImg,placeholderDiv,overlay,player,canvas,streamReady=false,pendingShot=false,shotDone=false;
-let justTookPhoto = false; // evita clique acidental depois da foto
 
 const STATIC_IMAGES={
   veado:[
@@ -110,15 +109,7 @@ async function shutterPress(){
     if(placeholderDiv?.parentElement) placeholderDiv.parentElement.removeChild(placeholderDiv);
     placeholderDiv=null; closeCameraOverlay();
   };
-if(canvas.toBlob){
-  canvas.toBlob(b => { done(b); }, "image/webp", .85);
-} else {
-  await done(null);
-}
-
-// ✅ marca que acabou de tirar a foto
-justTookPhoto = true;
-setTimeout(() => justTookPhoto = false, 300);
+  if(canvas.toBlob){canvas.toBlob(b=>{done(b);},"image/webp",.85);} else {await done(null);}
 }
 
 function isAnimalIntent(term){
@@ -264,42 +255,3 @@ function init(){
 }
 
 window.addEventListener("load",init,false);
-
-// 📸 LIGHTBOX / ZOOM DE IMAGEM
-window.addEventListener("load", () => {
-  const viewer = document.getElementById("img-viewer");
-  const viewerImg = document.getElementById("img-viewer-img");
-  const viewerClose = document.getElementById("img-viewer-close");
-  const viewerBg = document.getElementById("img-viewer-bg");
-  const spec = document.getElementById("spec-pic");
-
-  function openViewer(src) {
-    viewerImg.src = src;
-    viewer.style.display = "flex";
-  }
-
-  function closeViewer() {
-    viewer.style.display = "none";
-    viewerImg.src = "";
-  }
-
-  // 🖼️ Clicar na foto tirada pela câmera
-  if (spec) {
-    spec.addEventListener("click", () => {
-      if (justTookPhoto) return; // evita conflito após foto
-      if (spec.src && spec.style.display !== "none") openViewer(spec.src);
-    });
-  }
-
-  // 🖼️ Clicar em QUALQUER imagem da grade
-  document.querySelectorAll("#images .image img").forEach(img => {
-    img.addEventListener("click", () => {
-      if (justTookPhoto) return; // impede bug após foto
-      if (img.src) openViewer(img.src);
-    });
-  });
-
-  // ❌ Fechar ao clicar no fundo ou no X
-  viewerBg.addEventListener("click", closeViewer);
-  viewerClose.addEventListener("click", closeViewer);
-});
