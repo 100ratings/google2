@@ -243,6 +243,42 @@ a{text-decoration:none;color:#2962ff}
   }
 }
 
+#img-popup {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0,0,0,.85);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 99999;
+}
+
+#img-popup img {
+  max-width: 92vw;
+  max-height: 90vh;
+  border-radius: 12px;
+}
+
+#img-popup-close {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(0,0,0,.7);
+  color: white;
+  border: 0;
+  font-size: 26px;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+}
+
+#img-popup-bg {
+  position: absolute;
+  inset: 0;
+}
+
+
 
 
 
