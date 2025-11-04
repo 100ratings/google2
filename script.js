@@ -29,18 +29,17 @@ const STATIC_IMAGES = {
     {src:"https://100ratings.github.io/google/insulto/gata/08.jpg",caption:"felino, pet, animal, cute, adorable"},
     {src:"https://100ratings.github.io/google/insulto/gata/09.jpg",caption:"gato, animal, fofura, carinho, pet"}
   ],
-  anta:[
-    {src:"https://100ratings.github.io/google/insulto/anta/01.jpg",caption:"anta, animal, pet, fofura, selvagem"},
-    {src:"https://100ratings.github.io/google/insulto/anta/02.jpg",caption:"anta, doce, animal, fofa, gentil"},
-    {src:"https://100ratings.github.io/google/insulto/anta/03.jpg",caption:"anta, mamífero, animal, calma, doce"},
-    {src:"https://100ratings.github.io/google/insulto/anta/04.jpg",caption:"anta, pet, animal, selvagem, amor"},
-    {src:"https://100ratings.github.io/google/insulto/anta/05.jpg",caption:"animal, anta, gentil, fofa, pet"},
-    {src:"https://100ratings.github.io/google/insulto/anta/06.jpg",caption:"anta, fofura, mamífero, doce, amor"},
-    {src:"https://100ratings.github.io/google/insulto/anta/07.jpg",caption:"anta, fofa, pet, doce, gentil"},
-    {src:"https://100ratings.github.io/google/insulto/anta/08.jpg",caption:"animal, anta, pet, mamífero, calma"},
-    {src:"https://100ratings.github.io/google/insulto/anta/09.jpg",caption:"anta, animal, doce, pet, amor"}
-  ]
-};
+"viúva negra":[
+  {src:"https://100ratings.github.io/google/insulto/aranha/01.jpg",caption:"viúva negra, animal, pet, fofura, selvagem"},
+  {src:"https://100ratings.github.io/google/insulto/aranha/02.jpg",caption:"viúva negra, doce, animal, fofa, gentil"},
+  {src:"https://100ratings.github.io/google/insulto/aranha/03.jpg",caption:"viúva negra, mamífero, animal, calma, doce"},
+  {src:"https://100ratings.github.io/google/insulto/aranha/04.jpg",caption:"viúva negra, pet, animal, selvagem, amor"},
+  {src:"https://100ratings.github.io/google/insulto/aranha/05.jpg",caption:"animal, viúva negra, gentil, fofa, pet"},
+  {src:"https://100ratings.github.io/google/insulto/aranha/06.jpg",caption:"viúva negra, fofura, mamífero, doce, amor"},
+  {src:"https://100ratings.github.io/google/insulto/aranha/07.jpg",caption:"viúva negra, fofa, pet, doce, gentil"},
+  {src:"https://100ratings.github.io/google/insulto/aranha/08.jpg",caption:"animal, viúva negra, pet, mamífero, calma"},
+  {src:"https://100ratings.github.io/google/insulto/aranha/09.jpg",caption:"viúva negra, animal, doce, pet, amor"}
+];
 
 const DEFAULT_STATIC_TAGS = { veado: "veado, cervo, natureza", gata: "gata, felino, doméstico", anta: "anta, bovino, fazenda" };
 
@@ -443,3 +442,4 @@ function init(){
 }
 
 window.addEventListener("load", init, false);
+
