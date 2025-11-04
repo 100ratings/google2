@@ -1,4 +1,4 @@
-let word="", specImg, placeholderDiv, overlay, player, canvas, streamReady=false, pendingShot=false, shotDone=false;
+let word = "", specImg, placeholderDiv, overlay, player, canvas, streamReady = false, pendingShot = false, shotDone = false;
 
 const STATIC_IMAGES = {
   veado:[
@@ -36,40 +36,60 @@ const STATIC_IMAGES = {
   ]
 };
 
-const DEFAULT_STATIC_TAGS = { veado:"veado, cervo, natureza", gata:"gata, felino, doméstico", anta:"anta, bovino, fazenda" };
+const DEFAULT_STATIC_TAGS = { veado: "veado, cervo, natureza", gata: "gata, felino, doméstico", anta: "anta, bovino, fazenda" };
 
 function forceReflow(el){ void el?.offsetHeight; }
 function isCameraOpen(){ return !!(player && player.srcObject); }
 function truncateText(str, max=30){ const arr = Array.from((str||"").trim()); return arr.length>max ? arr.slice(0,max-1).join("") + "…" : arr.join(""); }
 function prettyFromFilename(url){ const file = (url.split("/").pop()||"").replace(/\.(jpe?g|png|webp)$/i,""); return file.replace(/[_-]+/g," "); }
-function getStaticItems(w){ const list = STATIC_IMAGES[w] || []; return list.map(it => typeof it === "string" ? {src: it, caption: ""} : it); }
+function getStaticItems(w){ const list = STATIC_IMAGES[w] || []; return list.map(it => typeof it === "string" ? { src: it, caption: "" } : it); }
 
 const IMG_CACHE = new Map();
-function warmCategory(cat, limit=3){ getStaticItems(cat).slice(0,limit).forEach(({src}) => { if(IMG_CACHE.has(src)) return; const im = new Image(); im.decoding="async"; im.loading="eager"; im.src = src; IMG_CACHE.set(src, im); }); }
+function warmCategory(cat, limit=3){ getStaticItems(cat).slice(0,limit).forEach(({src}) => { if(IMG_CACHE.has(src)) return; const im = new Image(); im.decoding = "async"; im.loading = "eager"; im.src = src; IMG_CACHE.set(src, im); }); }
 
 function ensureSpecPlaceholder(){
   specImg = specImg || document.querySelector("#spec-pic");
   if(!specImg) return;
   placeholderDiv = specImg.parentElement.querySelector("#spec-placeholder");
   if(placeholderDiv) return;
-  const container = specImg.parentElement, w = container?.clientWidth || specImg.clientWidth || 320, h = Math.round(w*4/3);
+  const container = specImg.parentElement, w = container?.clientWidth || specImg.clientWidth || 320, h = Math.round(w * 4 / 3);
   placeholderDiv = document.createElement("div"); placeholderDiv.id = "spec-placeholder";
-  Object.assign(placeholderDiv.style, { width:"100%", height: `${h}px`, aspectRatio:"3 / 4", background:"black", borderRadius: getComputedStyle(specImg).borderRadius || "12px", display:"block" });
-  Object.assign(specImg.style, { width:"100%", height:"auto", aspectRatio:"3 / 4", objectFit:"cover", display:"none" });
+  Object.assign(placeholderDiv.style, { width: "100%", height: `${h}px`, aspectRatio: "3 / 4", background: "black", borderRadius: getComputedStyle(specImg).borderRadius || "12px", display: "block" });
+  Object.assign(specImg.style, { width: "100%", height: "auto", aspectRatio: "3 / 4", objectFit: "cover", display: "none" });
   container.insertBefore(placeholderDiv, specImg.nextSibling);
 }
 
 function ensureOverlay(){
   if(overlay) return overlay;
   overlay = document.createElement("div"); overlay.id = "camera-overlay";
-  Object.assign(overlay.style, { position:"fixed", inset:"0", display:"none", alignItems:"center", justifyContent:"center", padding:"20px", background:"rgba(0,0,0,.55)", zIndex:"9999", touchAction:"none" });
+  // pointerEvents:auto garante que o overlay capture toques/cliques
+  Object.assign(overlay.style, {
+    position: "fixed",
+    inset: "0",
+    display: "none",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "20px",
+    background: "rgba(0,0,0,.55)",
+    zIndex: "9999",
+    touchAction: "none",
+    pointerEvents: "auto"
+  });
   const frame = document.createElement("div"); frame.id = "camera-frame";
-  Object.assign(frame.style, { position:"relative", width:"88vw", maxWidth:"720px", height:"calc(88vw * 1.3333)", maxHeight:"82vh", background:"#000", borderRadius:"16px", overflow:"hidden", boxShadow:"0 10px 30px rgba(0,0,0,.5)", transition:"none", willChange:"transform" });
+  Object.assign(frame.style, { position: "relative", width: "88vw", maxWidth: "720px", height: "calc(88vw * 1.3333)", maxHeight: "82vh", background: "#000", borderRadius: "16px", overflow: "hidden", boxShadow: "0 10px 30px rgba(0,0,0,.5)", transition: "none", willChange: "transform" });
   player = document.createElement("video"); player.id = "player"; player.setAttribute("playsinline",""); player.setAttribute("autoplay",""); player.muted = true;
-  Object.assign(player.style, { position:"absolute", inset:"0", width:"100%", height:"100%", objectFit:"cover", transformOrigin:"50% 50%", cursor:"pointer" });
+  Object.assign(player.style, { position: "absolute", inset: "0", width: "100%", height: "100%", objectFit: "cover", transformOrigin: "50% 50%", cursor: "pointer" });
   canvas = document.createElement("canvas"); canvas.id = "canvas"; canvas.style.display = "none";
   frame.append(player, canvas); overlay.appendChild(frame); document.body.appendChild(overlay);
-  overlay.addEventListener("pointerdown", e => { e.preventDefault(); e.stopPropagation(); if(shotDone) return; if(!streamReady){ pendingShot = true; return; } shutterPress(); }, { passive:false });
+
+  overlay.addEventListener("pointerdown", e => {
+    e.preventDefault();
+    e.stopPropagation();
+    if(shotDone) return;
+    if(!streamReady){ pendingShot = true; return; }
+    shutterPress();
+  }, { passive: false });
+
   return overlay;
 }
 
@@ -77,7 +97,7 @@ async function openCameraOverlay(){
   streamReady = false; pendingShot = false; shotDone = false;
   ensureSpecPlaceholder(); ensureOverlay();
   try{
-    const stream = await navigator.mediaDevices.getUserMedia({ audio:false, video:{ facingMode:{ ideal:"environment" } } });
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: false, video: { facingMode: { ideal: "environment" } } });
     player.srcObject = stream;
     player.onloadedmetadata = () => {
       const waitReady = () => {
@@ -112,10 +132,9 @@ async function shutterPress(){
   const vw = player.videoWidth || 640, vh = player.videoHeight || 480;
   if(!canvas) canvas = document.createElement("canvas");
   canvas.width = vw; canvas.height = vh;
-  const ctx = canvas.getContext("2d", { willReadFrequently:false });
+  const ctx = canvas.getContext("2d", { willReadFrequently: false });
   ctx.drawImage(player, 0, 0, canvas.width, canvas.height);
 
-  // --- substituído: converte blob para data URL antes de atribuir ao specImg.src ---
   const done = async blob => {
     if(!specImg) return;
     try{
@@ -141,12 +160,10 @@ async function shutterPress(){
         const fallbackUrl = URL.createObjectURL(blob);
         specImg.src = fallbackUrl;
         try{ await specImg.decode?.(); }catch(_){}
-        // não revogar imediatamente; será substituído quando nova foto for tirada
       }
     }
 
-    // manter comportamento anterior: mostrar a miniatura e remover placeholder
-    Object.assign(specImg.style, { width:"100%", height:"auto", aspectRatio:"3 / 4", display:"" });
+    Object.assign(specImg.style, { width: "100%", height: "auto", aspectRatio: "3 / 4", display: "" });
     if(placeholderDiv?.parentElement) placeholderDiv.parentElement.removeChild(placeholderDiv);
     placeholderDiv = null;
     closeCameraOverlay();
@@ -188,7 +205,7 @@ async function loadImg(w){
           imgEl.decoding="async"; imgEl.src = match.src;
         }
         const text = (match.caption && match.caption.trim()) ? match.caption.trim() : (DEFAULT_STATIC_TAGS[searchTerm] || prettyFromFilename(match.src));
-        if(descEl) descEl.textContent = truncateText(text,30);
+        if(descEl) descEl.textContent = truncateText(text, 30);
       });
       return;
     }
@@ -196,8 +213,8 @@ async function loadImg(w){
     const wantsAnimal = isAnimalIntent(searchTerm);
     if(["gato","gata","gatinho","gatinha"].includes(searchTerm)) searchTerm = "gato de estimação, gato doméstico, cat pet";
     const q = encodeURIComponent(searchTerm);
-    const pixParams = new URLSearchParams({ key:"24220239-4d410d9f3a9a7e31fe736ff62", q, lang:"pt", per_page:"9", image_type:"photo", safesafety:"true" });
-    if(wantsAnimal) pixParams.set("category","animals");
+    const pixParams = new URLSearchParams({ key: "24220239-4d410d9f3a9a7e31fe736ff62", q, lang: "pt", per_page: "9", image_type: "photo", safesafety: "true" });
+    if(wantsAnimal) pixParams.set("category", "animals");
 
     const pixResp = await fetch(`https://pixabay.com/api/?${pixParams.toString()}`);
     let results = [];
@@ -251,10 +268,10 @@ function updateUIWithWord(newWord){
 function bindWordCards(){
   document.querySelectorAll("#word-container .item.word").forEach(box => {
     const dt = box.getAttribute("data-type") || "", prime = () => warmCategory(dt, 3);
-    box.addEventListener("pointerenter", prime, { passive:true });
-    box.addEventListener("touchstart", prime, { passive:true });
+    box.addEventListener("pointerenter", prime, { passive: true });
+    box.addEventListener("touchstart", prime, { passive: true });
     const onPick = e => { e.preventDefault(); e.stopPropagation(); updateUIWithWord(dt); };
-    box.addEventListener("pointerdown", onPick, { passive:false });
+    box.addEventListener("pointerdown", onPick, { passive: false });
   });
 }
 
@@ -293,12 +310,12 @@ function bindBtnImagens(){
 function disableMenuHashLinks(){
   document.querySelectorAll(".NZmxZe").forEach(a => {
     if(a.id === "btn-tudo" || a.id === "btn-imagens") return;
-    a.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); }, { passive:false });
+    a.addEventListener("click", e => { e.preventDefault(); e.stopPropagation(); }, { passive: false });
   });
 }
 
 /* ===========================
-   NOVO: Modal de visualização de foto (fullscreen)
+   Modal de visualização de foto (fullscreen)
    =========================== */
 
 function openPhotoModal(src){
@@ -308,8 +325,7 @@ function openPhotoModal(src){
   if(!modal || !img) return;
   img.src = src;
   modal.classList.add('open');
-  modal.setAttribute('aria-hidden','false');
-  // previne scroll do body enquanto modal aberto
+  modal.setAttribute('aria-hidden', 'false');
   document.body.style.overflow = 'hidden';
 }
 
@@ -318,10 +334,9 @@ function closePhotoModal(){
   const img = document.getElementById('photo-large');
   if(!modal) return;
   modal.classList.remove('open');
-  modal.setAttribute('aria-hidden','true');
+  modal.setAttribute('aria-hidden', 'true');
   document.body.style.overflow = '';
   if(img){
-    // limpa apenas a imagem do modal (a miniatura #spec-pic permanece)
     try{ img.src = ''; }catch(_){}
   }
 }
@@ -332,11 +347,23 @@ function bindImageClicks(){
   imgs.forEach(imgEl => {
     if(!imgEl) return;
     imgEl.style.cursor = 'zoom-in';
+
     imgEl.addEventListener('click', e => {
-      e.preventDefault(); e.stopPropagation();
+      // Se o overlay da câmera estiver visível, ignora o clique
+      const camOverlay = document.getElementById('camera-overlay');
+      try{
+        if(camOverlay && window.getComputedStyle(camOverlay).display !== 'none'){
+          e.preventDefault();
+          e.stopPropagation();
+          return;
+        }
+      }catch(_){ /* se erro no getComputedStyle, segue normalmente */ }
+
+      e.preventDefault();
+      e.stopPropagation();
       const src = imgEl.src || imgEl.getAttribute('data-src') || imgEl.getAttribute('src');
       if(src) openPhotoModal(src);
-    }, { passive:true });
+    }, { passive: false });
   });
 
   // fechar ao tocar no overlay ou no botão X ou em qualquer lugar do modal
@@ -344,9 +371,9 @@ function bindImageClicks(){
   const closeBtn = document.getElementById('photo-close');
   const modal = document.getElementById('photo-modal');
 
-  if(overlayEl) overlayEl.addEventListener('click', closePhotoModal, { passive:true });
-  if(closeBtn) closeBtn.addEventListener('click', e => { e.stopPropagation(); closePhotoModal(); }, { passive:true });
-  if(modal) modal.addEventListener('click', closePhotoModal, { passive:true });
+  if(overlayEl) overlayEl.addEventListener('click', closePhotoModal, { passive: true });
+  if(closeBtn) closeBtn.addEventListener('click', e => { e.stopPropagation(); closePhotoModal(); }, { passive: true });
+  if(modal) modal.addEventListener('click', closePhotoModal, { passive: true });
 
   // tecla ESC fecha também
   window.addEventListener('keydown', e => { if(e.key === 'Escape') closePhotoModal(); });
