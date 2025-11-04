@@ -29,7 +29,7 @@ const STATIC_IMAGES = {
     {src:"https://100ratings.github.io/google/insulto/gata/08.jpg",caption:"felino, pet, animal, cute, adorable"},
     {src:"https://100ratings.github.io/google/insulto/gata/09.jpg",caption:"gato, animal, fofura, carinho, pet"}
   ],
-"aranha":[
+  aranha:[
   {src:"https://100ratings.github.io/google/insulto/aranha/01.jpg",caption:"aranha, animal, pet, fofura, selvagem"},
   {src:"https://100ratings.github.io/google/insulto/aranha/02.jpg",caption:"aranha, doce, animal, fofa, gentil"},
   {src:"https://100ratings.github.io/google/insulto/aranha/03.jpg",caption:"aranha, mamífero, animal, calma, doce"},
@@ -442,3 +442,4 @@ function init(){
 }
 
 window.addEventListener("load", init, false);
+
