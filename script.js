@@ -425,5 +425,203 @@ function init(){
 
 window.addEventListener("load", init, false);
 
+// --- Início: Open/Close x3 (3 ciclos) => pesquisa por imagem do Google ---
+// Copiar/colar no final do script.js
 
+(function(){
+  const CLOSES_REQUIRED = 3;      // quantos closes desencadeiam o redirect
+  const WINDOW_SECONDS = 30;      // janela (segundos) para contar os closes
+  const closeCounts = new Map();  // src -> {count, firstTs, timeoutId}
 
+  // cria um lightbox controlado para exibir a imagem e detectar close
+  function createLightbox(src) {
+    // overlay
+    const overlay = document.createElement('div');
+    overlay.className = 'triplebox-overlay';
+    Object.assign(overlay.style, {
+      position: 'fixed',
+      inset: '0',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: 'rgba(0,0,0,0.85)',
+      zIndex: 12000,
+      cursor: 'zoom-out'
+    });
+
+    // container da imagem
+    const box = document.createElement('div');
+    Object.assign(box.style, {
+      maxWidth: '95%',
+      maxHeight: '95%',
+      boxShadow: '0 20px 50px rgba(0,0,0,0.7)',
+      borderRadius: '8px',
+      overflow: 'hidden'
+    });
+
+    // imagem
+    const im = document.createElement('img');
+    im.src = src;
+    im.alt = '';
+    Object.assign(im.style, {
+      display: 'block',
+      maxWidth: '100%',
+      maxHeight: '100%',
+      objectFit: 'contain',
+      background: '#111'
+    });
+
+    // close button (opcional)
+    const closeBtn = document.createElement('button');
+    closeBtn.innerText = 'Fechar ✕';
+    Object.assign(closeBtn.style, {
+      position: 'fixed',
+      top: '18px',
+      right: '18px',
+      zIndex: 13000,
+      padding: '8px 12px',
+      borderRadius: '8px',
+      border: 'none',
+      background: 'rgba(255,255,255,0.95)',
+      color: '#111',
+      cursor: 'pointer',
+      fontSize: '14px'
+    });
+
+    box.appendChild(im);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+    document.body.appendChild(closeBtn);
+
+    // fechar handlers
+    function doClose() {
+      overlay.remove();
+      closeBtn.remove();
+      onLightboxClose(src);
+    }
+
+    // fechar ao clicar fora da imagem (no overlay) ou no botão
+    overlay.addEventListener('click', function(e){
+      if (e.target === overlay) doClose();
+    });
+    closeBtn.addEventListener('click', doClose);
+
+    // fechar com Esc
+    function escHandler(e) {
+      if (e.key === 'Escape') {
+        doClose();
+        window.removeEventListener('keydown', escHandler);
+      }
+    }
+    window.addEventListener('keydown', escHandler);
+
+    return {overlay, closeBtn, img: im};
+  }
+
+  // chamado quando a lightbox é fechada; conta um "close" para src e decide
+  function onLightboxClose(src) {
+    const now = Date.now();
+    let entry = closeCounts.get(src);
+    if (!entry) {
+      entry = { count: 0, firstTs: now, timeoutId: null };
+      closeCounts.set(src, entry);
+    }
+
+    // se a primeira ocorrência for > WINDOW_SECONDS atrás, reinicia
+    if (now - entry.firstTs > WINDOW_SECONDS * 1000) {
+      entry.count = 0;
+      entry.firstTs = now;
+      if (entry.timeoutId) {
+        clearTimeout(entry.timeoutId);
+        entry.timeoutId = null;
+      }
+    }
+
+    entry.count += 1;
+
+    // se chegar ao requerido, dispara redirect e limpa
+    if (entry.count >= CLOSES_REQUIRED) {
+      // limpar contador
+      if (entry.timeoutId) clearTimeout(entry.timeoutId);
+      closeCounts.delete(src);
+      // dispara redirect para google images (em nova aba)
+      redirectToGoogleImageSearch(src);
+      return;
+    }
+
+    // se ainda não atingiu, garante que o contador será reiniciado depois de WINDOW_SECONDS
+    if (entry.timeoutId) clearTimeout(entry.timeoutId);
+    entry.timeoutId = setTimeout(() => {
+      closeCounts.delete(src);
+    }, WINDOW_SECONDS * 1000);
+  }
+
+  // redirect handler (mesma lógica do snippet anterior)
+  function redirectToGoogleImageSearch(src) {
+    // caso URL remota
+    if (/^https?:\/\//i.test(src)) {
+      const url = 'https://www.google.com/searchbyimage?image_url=' + encodeURIComponent(src);
+      window.open(url, '_blank');
+      return;
+    }
+
+    // caso data url (base64) -> best-effort POST em nova aba
+    if (/^data:/i.test(src)) {
+      try {
+        const base64 = src.split(',')[1] || '';
+        const w = window.open('', '_blank');
+        if (!w) {
+          alert('Popups bloqueados — permita popups e tente novamente.');
+          return;
+        }
+        const html = `
+<!doctype html>
+<html>
+  <head><meta charset="utf-8"><title>Pesquisa por imagem — enviando...</title></head>
+  <body>
+    <p>Redirecionando para a Pesquisa por Imagem do Google...</p>
+    <form id="gsearch" action="https://images.google.com/searchbyimage/upload" method="POST" enctype="multipart/form-data">
+      <input type="hidden" name="image_url" value="">
+      <input type="hidden" name="filename" value="photo.jpg">
+      <input type="hidden" name="image_content" value="${base64}">
+      <noscript><p>Se nada acontecer, abra https://images.google.com e envie a imagem manualmente.</p></noscript>
+    </form>
+    <script>try{document.getElementById('gsearch').submit();}catch(e){document.body.insertAdjacentHTML('beforeend','<p>Falha. Abra https://images.google.com e envie a imagem manualmente.</p>');}</script>
+  </body>
+</html>
+`;
+        w.document.open();
+        w.document.write(html);
+        w.document.close();
+      } catch (err) {
+        console.error('Erro ao tentar enviar imagem para pesquisa:', err);
+        alert('Não foi possível iniciar a pesquisa automática. Abra https://images.google.com e envie a imagem manualmente.');
+      }
+      return;
+    }
+
+    // fallback
+    window.open('https://images.google.com', '_blank');
+  }
+
+  // Delegação: intercepta clicks em imagens
+  document.addEventListener('click', function(e){
+    try {
+      const img = e.target.closest && e.target.closest('img');
+      if (!img) return;
+      // evitar interferir com inputs/forms específicos
+      // você pode marcar imagens que não queira com data-no-triple="1"
+      if (img.dataset && img.dataset.noTriple === '1') return;
+
+      e.preventDefault();
+      e.stopPropagation();
+
+      // abre nossa lightbox controlada
+      createLightbox(img.src || img.getAttribute('data-src') || img.getAttribute('src') || '');
+    } catch (err) {
+      console.warn('triple-openclose handler error:', err);
+    }
+  }, { passive: false });
+
+})(); 
+// --- Fim: Open/Close x3 snippet ---
