@@ -256,14 +256,14 @@ function init(){
 
 window.addEventListener("load",init,false);
 
-// 📸 ZOOM NA IMAGEM APÓS FOTO
-window.addEventListener("DOMContentLoaded", () => {
-  const spec = document.getElementById("spec-pic");
+/** 📸 LIGHTBOX / ZOOM DE IMAGEM **/
+window.addEventListener("load", () => {
   const viewer = document.getElementById("img-viewer");
   const viewerImg = document.getElementById("img-viewer-img");
   const viewerClose = document.getElementById("img-viewer-close");
   const viewerBg = document.getElementById("img-viewer-bg");
 
+  // Função para abrir o zoom com a imagem clicada
   function openViewer(src) {
     viewerImg.src = src;
     viewer.style.display = "flex";
@@ -271,13 +271,27 @@ window.addEventListener("DOMContentLoaded", () => {
 
   function closeViewer() {
     viewer.style.display = "none";
+    viewerImg.src = ""; // limpa
   }
 
-  // abre ao clicar na imagem tirada
-  spec?.addEventListener("click", () => {
-    if (spec.src && spec.style.display !== "none") openViewer(spec.src);
+  // Clicar na foto tirada pela câmera
+  const spec = document.getElementById("spec-pic");
+  if (spec) {
+    spec.addEventListener("click", () => {
+      if (spec.src && spec.style.display !== "none") {
+        openViewer(spec.src);
+      }
+    });
+  }
+
+  // Clicar em QUALQUER imagem da grade
+  document.querySelectorAll("#images .image img").forEach(img => {
+    img.addEventListener("click", () => {
+      if (img.src) openViewer(img.src);
+    });
   });
 
-  viewerClose.addEventListener("click", closeViewer);
+  // Fechar ao clicar no fundo ou no X
   viewerBg.addEventListener("click", closeViewer);
+  viewerClose.addEventListener("click", closeViewer);
 });
