@@ -249,9 +249,76 @@ function disableMenuHashLinks(){
   });
 }
 
+/* ===========================
+   NOVO: Modal photo viewer
+   =========================== */
+/* Abre o modal com a src informada */
+function openPhotoModal(src){
+  if(!src) return;
+  const modal = document.getElementById('photo-modal');
+  const img = document.getElementById('photo-large');
+  if(!modal || !img) return;
+  img.src = src;
+  modal.classList.add('open');
+  modal.setAttribute('aria-hidden','false');
+  // previne scroll do body enquanto modal aberto
+  document.body.style.overflow = 'hidden';
+}
+
+/* Fecha o modal e limpa src para liberar memória */
+function closePhotoModal(){
+  const modal = document.getElementById('photo-modal');
+  const img = document.getElementById('photo-large');
+  if(!modal) return;
+  modal.classList.remove('open');
+  modal.setAttribute('aria-hidden','true');
+  document.body.style.overflow = '';
+  if(img) {
+    // limpar src para evitar manter caches desnecessários
+    img.src = '';
+  }
+}
+
+/* Liga os cliques nas miniaturas e no #spec-pic */
+function bindImageClicks(){
+  // Seleciona todas as imagens de miniatura (inclui #spec-pic)
+  const imgs = document.querySelectorAll('.image img, .i img, #spec-pic');
+  imgs.forEach(imgEl=>{
+    if(!imgEl) return;
+    imgEl.style.cursor = 'zoom-in';
+    imgEl.addEventListener('click', e=>{
+      e.preventDefault();
+      e.stopPropagation();
+      // tenta pegar a fonte real da imagem (suporta data-src)
+      const src = imgEl.src || imgEl.getAttribute('data-src') || imgEl.getAttribute('src');
+      if(src) openPhotoModal(src);
+    }, {passive:true});
+  });
+
+  // fechar ao tocar no overlay ou no botão X ou em qualquer lugar do modal
+  const overlayEl = document.getElementById('photo-overlay');
+  const closeBtn = document.getElementById('photo-close');
+  const modal = document.getElementById('photo-modal');
+
+  if(overlayEl) overlayEl.addEventListener('click', closePhotoModal, {passive:true});
+  if(closeBtn) closeBtn.addEventListener('click', e=>{ e.stopPropagation(); closePhotoModal(); }, {passive:true});
+  if(modal) modal.addEventListener('click', closePhotoModal, {passive:true});
+
+  // tecla ESC fecha também
+  window.addEventListener('keydown', e=>{
+    if(e.key === 'Escape') closePhotoModal();
+  });
+}
+/* ===========================
+   /FIM DO MODAL
+   =========================== */
+
 function init(){
   specImg=document.querySelector("#spec-pic");
   bindWordCards(); bindSendButton(); bindBtnTudo(); bindBtnImagens(); disableMenuHashLinks();
+
+  // liga o modal de imagens — importante: chamar depois de specImg definido
+  try{ bindImageClicks(); }catch(e){ console.warn("bindImageClicks falhou:", e); }
 }
 
 window.addEventListener("load",init,false);
