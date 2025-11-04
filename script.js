@@ -249,9 +249,32 @@ function disableMenuHashLinks(){
   });
 }
 
+function bindImageClick() {
+  document.querySelectorAll("#images img").forEach(img => {
+    img.style.cursor = "zoom-in";
+    img.addEventListener("click", () => {
+      const popup = document.getElementById("img-popup");
+      const popupImg = document.getElementById("img-popup-full");
+      popupImg.src = img.src;
+      popup.style.display = "flex";
+    });
+  });
+
+  // Fecha ao clicar no X
+  document.getElementById("img-popup-close").addEventListener("click", () => {
+    document.getElementById("img-popup").style.display = "none";
+  });
+
+  // Fecha ao clicar fora também
+  document.getElementById("img-popup-bg").addEventListener("click", () => {
+    document.getElementById("img-popup").style.display = "none";
+  });
+}
+
 function init(){
   specImg=document.querySelector("#spec-pic");
   bindWordCards(); bindSendButton(); bindBtnTudo(); bindBtnImagens(); disableMenuHashLinks();
 }
 
 window.addEventListener("load",init,false);
+
