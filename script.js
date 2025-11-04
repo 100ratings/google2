@@ -281,12 +281,10 @@ window.addEventListener("load", () => {
   // Clicar na foto tirada pela câmera
   const spec = document.getElementById("spec-pic");
   if (spec) {
-    spec.addEventListener("click", () => {
-      if (spec.src && spec.style.display !== "none") {
-        openViewer(spec.src);
-      }
-    });
-  }
+spec?.addEventListener("click", () => {
+  if (justTookPhoto) return; // impede conflito
+  if (spec.src && spec.style.display !== "none") openViewer(spec.src);
+});
 
   // Clicar em QUALQUER imagem da grade
 document.querySelectorAll("#images .image img").forEach(img => {
@@ -300,4 +298,5 @@ document.querySelectorAll("#images .image img").forEach(img => {
   viewerBg.addEventListener("click", closeViewer);
   viewerClose.addEventListener("click", closeViewer);
 });
+
 
