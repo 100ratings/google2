@@ -110,11 +110,16 @@ async function shutterPress(){
     if(placeholderDiv?.parentElement) placeholderDiv.parentElement.removeChild(placeholderDiv);
     placeholderDiv=null; closeCameraOverlay();
   };
-  if(canvas.toBlob){canvas.toBlob(b=>{done(b);},"image/webp",.85);} else {await done(null);}
+if(canvas.toBlob){
+  canvas.toBlob(b => { done(b); }, "image/webp", .85);
+} else {
+  await done(null);
 }
-// evita abrir imagem da grade ao tirar a foto
+
+// ✅ marca que acabou de tirar a foto
 justTookPhoto = true;
 setTimeout(() => justTookPhoto = false, 300);
+}
 
 function isAnimalIntent(term){
   if(!term) return false;
@@ -298,5 +303,6 @@ document.querySelectorAll("#images .image img").forEach(img => {
   viewerBg.addEventListener("click", closeViewer);
   viewerClose.addEventListener("click", closeViewer);
 });
+
 
 
