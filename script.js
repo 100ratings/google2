@@ -29,15 +29,15 @@ const STATIC_IMAGES = {
     {src:"https://100ratings.github.io/google/insulto/gata/09.jpg",caption:"gato, animal, fofura, carinho, pet"}
   ],
   aranha:[
-   {src:"https://100ratings.github.io/google/insulto/aranha/01.jpg",caption:"venenosa, aracnídeo, teia"},
-   {src:"https://100ratings.github.io/google/insulto/aranha/02.jpg",caption:"toxina, perigosa, predadora"},
-   {src:"https://100ratings.github.io/google/insulto/aranha/03.jpg",caption:"veneno potente, noturna, predadora"},
-   {src:"https://100ratings.github.io/google/insulto/aranha/04.jpg",caption:"teia, aracnídeo, perigosa"},
-   {src:"https://100ratings.github.io/google/insulto/aranha/05.jpg",caption:"venenosa, pequena, silenciosa"},
-   {src:"https://100ratings.github.io/google/insulto/aranha/06.jpg",caption:"comportamento predador, teia, venenosa"},
-   {src:"https://100ratings.github.io/google/insulto/aranha/07.jpg",caption:"toxina neurotóxica, perigosa, aracnídeo"},
-   {src:"https://100ratings.github.io/google/insulto/aranha/08.jpg",caption:"teia entrelaçada, predadora, noturna"},
-   {src:"https://100ratings.github.io/google/insulto/aranha/09.jpg",caption:"venenosa, observação, aracnídeo"}
+    {src:"https://100ratings.github.io/google/insulto/aranha/01.jpg",caption:"venenosa, aracnídeo, teia"},
+    {src:"https://100ratings.github.io/google/insulto/aranha/02.jpg",caption:"toxina, perigosa, predadora"},
+    {src:"https://100ratings.github.io/google/insulto/aranha/03.jpg",caption:"veneno potente, noturna, predadora"},
+    {src:"https://100ratings.github.io/google/insulto/aranha/04.jpg",caption:"teia, aracnídeo, perigosa"},
+    {src:"https://100ratings.github.io/google/insulto/aranha/05.jpg",caption:"venenosa, pequena, silenciosa"},
+    {src:"https://100ratings.github.io/google/insulto/aranha/06.jpg",caption:"comportamento predador, teia, venenosa"},
+    {src:"https://100ratings.github.io/google/insulto/aranha/07.jpg",caption:"toxina neurotóxica, perigosa, aracnídeo"},
+    {src:"https://100ratings.github.io/google/insulto/aranha/08.jpg",caption:"teia entrelaçada, predadora, noturna"},
+    {src:"https://100ratings.github.io/google/insulto/aranha/09.jpg",caption:"venenosa, observação, aracnídeo"}
   ]
 };
 
@@ -424,4 +424,5 @@ function init(){
 }
 
 window.addEventListener("load", init, false);
+
 
