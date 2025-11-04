@@ -243,45 +243,6 @@ a{text-decoration:none;color:#2962ff}
   }
 }
 
-/* ===== Popup de imagem grande ===== */
-#img-popup {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,.85);
-  display: none;            /* inicia escondido */
-  justify-content: center;
-  align-items: center;
-  z-index: 99999;           /* fica acima de tudo */
-}
-
-#img-popup img {
-  max-width: 92vw;
-  max-height: 90vh;
-  border-radius: 12px;
-  display: block;
-}
-
-#img-popup-close {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  background: rgba(0,0,0,.7);
-  color: #fff;
-  border: 0;
-  font-size: 26px;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  line-height: 40px;
-}
-
-#img-popup-bg {
-  position: absolute;
-  inset: 0;                 /* área clicável pra fechar */
-}
-
-
-
 
 
 

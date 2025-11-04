@@ -249,54 +249,9 @@ function disableMenuHashLinks(){
   });
 }
 
-function bindImageClick() {
-  const popup = document.getElementById("img-popup");
-  const popupImg = document.getElementById("img-popup-full");
-
-  // Imagens da grade
-  document.querySelectorAll("#images img").forEach(img => {
-    if (img.dataset.zoomBound === "1") return;
-    img.dataset.zoomBound = "1";
-    img.style.cursor = "zoom-in";
-    img.addEventListener("click", () => {
-      popupImg.src = img.src;
-      popup.style.display = "flex";
-    });
-  });
-
-  // Foto tirada da câmera (#spec-pic)
-  const camImg = document.getElementById("spec-pic");
-  if (camImg && camImg.src && camImg.dataset.zoomBound !== "1") {
-    camImg.dataset.zoomBound = "1";
-    camImg.style.cursor = "zoom-in";
-    camImg.addEventListener("click", () => {
-      popupImg.src = camImg.src;
-      popup.style.display = "flex";
-    });
-  }
-
-  // Botão X pra fechar
-  document.getElementById("img-popup-close").onclick = () => {
-    popup.style.display = "none";
-  };
-
-  // Fundo escuro pra fechar
-  document.getElementById("img-popup-bg").onclick = () => {
-    popup.style.display = "none";
-  };
-}
-
 function init(){
   specImg=document.querySelector("#spec-pic");
-  bindWordCards();
-  bindSendButton();
-  bindBtnTudo();
-  bindBtnImagens();
-  disableMenuHashLinks();
-  bindImageClick(); // ✅ Ativa o popup nas imagens
+  bindWordCards(); bindSendButton(); bindBtnTudo(); bindBtnImagens(); disableMenuHashLinks();
 }
 
 window.addEventListener("load",init,false);
-
-
-
