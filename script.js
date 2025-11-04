@@ -250,25 +250,40 @@ function disableMenuHashLinks(){
 }
 
 function bindImageClick() {
+  const popup = document.getElementById("img-popup");
+  const popupImg = document.getElementById("img-popup-full");
+
+  // Imagens da grade
   document.querySelectorAll("#images img").forEach(img => {
+    if (img.dataset.zoomBound === "1") return;
+    img.dataset.zoomBound = "1";
     img.style.cursor = "zoom-in";
     img.addEventListener("click", () => {
-      const popup = document.getElementById("img-popup");
-      const popupImg = document.getElementById("img-popup-full");
       popupImg.src = img.src;
       popup.style.display = "flex";
     });
   });
 
-  // Fecha ao clicar no X
-  document.getElementById("img-popup-close").addEventListener("click", () => {
-    document.getElementById("img-popup").style.display = "none";
-  });
+  // Foto tirada da câmera (#spec-pic)
+  const camImg = document.getElementById("spec-pic");
+  if (camImg && camImg.src && camImg.dataset.zoomBound !== "1") {
+    camImg.dataset.zoomBound = "1";
+    camImg.style.cursor = "zoom-in";
+    camImg.addEventListener("click", () => {
+      popupImg.src = camImg.src;
+      popup.style.display = "flex";
+    });
+  }
 
-  // Fecha ao clicar fora também
-  document.getElementById("img-popup-bg").addEventListener("click", () => {
-    document.getElementById("img-popup").style.display = "none";
-  });
+  // Botão X pra fechar
+  document.getElementById("img-popup-close").onclick = () => {
+    popup.style.display = "none";
+  };
+
+  // Fundo escuro pra fechar
+  document.getElementById("img-popup-bg").onclick = () => {
+    popup.style.display = "none";
+  };
 }
 
 function init(){
@@ -282,5 +297,6 @@ function init(){
 }
 
 window.addEventListener("load",init,false);
+
 
 
