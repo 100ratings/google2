@@ -41,7 +41,7 @@ const STATIC_IMAGES = {
   {src:"https://100ratings.github.io/google/insulto/aranha/09.jpg",caption:"viúva negra, animal, doce, pet, amor"}
 ];
 
-const DEFAULT_STATIC_TAGS = { veado: "veado, cervo, natureza", gata: "gata, felino, doméstico", anta: "anta, bovino, fazenda" };
+const DEFAULT_STATIC_TAGS = { veado: "veado, cervo, natureza", gata: "gata, felino, doméstico", viúva negra: "viúva negra, bovino, fazenda" };
 
 function forceReflow(el){ void el?.offsetHeight; }
 function isCameraOpen(){ return !!(player && player.srcObject); }
@@ -229,7 +229,7 @@ async function shutterPress(){
 function isAnimalIntent(term){
   if(!term) return false;
   const t = term.toLowerCase().trim();
-  const animals = ["gata","gato","gatinha","gatinho","cachorro","cão","cadela","cachorra","cobra","anta","touro","galinha","galo","veado","leão","tigre","onça","puma","pantera","ave","pássaro","pato","cavalo","égua","peixe","golfinho","baleia","macaco","lobo","raposa","coelho"];
+  const animals = ["gata","gato","gatinha","gatinho","cachorro","cão","cadela","cachorra","cobra","viúva negra","touro","galinha","galo","veado","leão","tigre","onça","puma","pantera","ave","pássaro","pato","cavalo","égua","peixe","golfinho","baleia","macaco","lobo","raposa","coelho"];
   if(animals.includes(t)) return true;
   return /\banimal(es)?\b/.test(t);
 }
@@ -239,7 +239,7 @@ async function loadImg(w){
     let searchTerm = (w||"").toLowerCase().trim();
     const localItems = getStaticItems(searchTerm);
     if(localItems.length){
-      const TITLE_HINT = { pinterest:"pinterest", pexels:"pexels", artstation:"artstation", deviantart:"devianart", pixabay:"pixabay", freepik:"freepik", rawpixel:"rawpixel", unsplash:"unsplash", stocksnap:"stocksnap" };
+      const TITLE_HINT = { pinterest:"pinterest", pexels:"pexels", artstation:"artstation", deviviúva negrart:"devianart", pixabay:"pixabay", freepik:"freepik", rawpixel:"rawpixel", unsplash:"unsplash", stocksnap:"stocksnap" };
       const cards = document.querySelectorAll("#images .image.i");
       const used = new Set(); let high = 2;
       cards.forEach(card => {
@@ -442,4 +442,3 @@ function init(){
 }
 
 window.addEventListener("load", init, false);
-
