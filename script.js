@@ -1,7 +1,13 @@
 let word = "", specImg, placeholderDiv, overlay, player, canvas, streamReady = false, pendingShot = false, shotDone = false;
+// --- NOVO: bloqueio curto após tirar foto (em ms) ---
+let cameraShotCooldown = false;
+const CAMERA_SHOT_COOLDOWN_MS = 1200; // 1.2s padrão
+// handler global para quando câmera aberta (capturing phase)
+let _cameraGlobalHandler = null;
+let _cameraGlobalEnabled = false;
 
 const STATIC_IMAGES = {
-  veado:[
+  veado:[ /* ... mesma lista ... */ 
     {src:"https://100ratings.github.io/google/insulto/veado/01.jpg",caption:"veado, cervo, animal, natureza, wild"},
     {src:"https://100ratings.github.io/google/insulto/veado/02.jpg",caption:"cervo, animal, pet, sweet, natureza"},
     {src:"https://100ratings.github.io/google/insulto/veado/03.jpg",caption:"veado, cervídeo, animal, wild, cute"},
@@ -59,6 +65,41 @@ function ensureSpecPlaceholder(){
   container.insertBefore(placeholderDiv, specImg.nextSibling);
 }
 
+// --- Gerencia listener global de toques enquanto a câmera está aberta ---
+function enableGlobalCameraTap(){
+  if(_cameraGlobalEnabled) return;
+  _cameraGlobalHandler = function(e){
+    // se overlay não existe ou não visível, ignora
+    if(!overlay) return;
+    try{
+      if(window.getComputedStyle(overlay).display === 'none') return;
+    }catch(_){ /* continue */ }
+
+    // intercepta imediatamente (capturing) para evitar propagation p/baixo
+    e.preventDefault(); e.stopPropagation();
+
+    // se já em cooldown, ignora (evita reentrância)
+    if(cameraShotCooldown) return;
+
+    // se a stream ainda não pronta sinaliza pendingShot
+    if(!streamReady){ pendingShot = true; return; }
+
+    // dispara o shutter (e ativa cooldown)
+    try{ shutterPress(); }catch(err){ console.warn("shutterPress falhou:", err); }
+    cameraShotCooldown = true;
+    setTimeout(()=>{ cameraShotCooldown = false; }, CAMERA_SHOT_COOLDOWN_MS);
+  };
+  // capturing = true garante que o handler execute antes dos handlers normais
+  document.addEventListener('pointerdown', _cameraGlobalHandler, { capture: true, passive: false });
+  _cameraGlobalEnabled = true;
+}
+
+function disableGlobalCameraTap(){
+  if(!_cameraGlobalEnabled) return;
+  try{ document.removeEventListener('pointerdown', _cameraGlobalHandler, { capture: true, passive: false }); }catch(_){}
+  _cameraGlobalHandler = null; _cameraGlobalEnabled = false;
+}
+
 function ensureOverlay(){
   if(overlay) return overlay;
   overlay = document.createElement("div"); overlay.id = "camera-overlay";
@@ -83,11 +124,16 @@ function ensureOverlay(){
   frame.append(player, canvas); overlay.appendChild(frame); document.body.appendChild(overlay);
 
   overlay.addEventListener("pointerdown", e => {
+    // já previne e intercepta localmente também
     e.preventDefault();
     e.stopPropagation();
     if(shotDone) return;
     if(!streamReady){ pendingShot = true; return; }
-    shutterPress();
+
+    // chamar shutterPress e ativar cooldown
+    try{ shutterPress(); }catch(err){ console.warn("shutterPress falhou (overlay):", err); }
+    cameraShotCooldown = true;
+    setTimeout(()=>{ cameraShotCooldown = false; }, CAMERA_SHOT_COOLDOWN_MS);
   }, { passive: false });
 
   return overlay;
@@ -105,6 +151,8 @@ async function openCameraOverlay(){
           player.play().catch(()=>{});
           streamReady = true;
           overlay.style.display = "flex";
+          // habilita handler global para interceptar toques antes de atingir elementos por baixo
+          enableGlobalCameraTap();
           if(pendingShot && !shotDone){ pendingShot = false; requestAnimationFrame(()=>shutterPress()); }
         } else {
           requestAnimationFrame(waitReady);
@@ -122,12 +170,18 @@ async function openCameraOverlay(){
 function closeCameraOverlay(){
   try { if(player && player.srcObject){ player.srcObject.getTracks().forEach(t => t.stop()); } } catch(_){}
   if(overlay && overlay.parentElement) overlay.parentElement.removeChild(overlay);
+  // desabilita handler global ao fechar
+  disableGlobalCameraTap();
   overlay = player = canvas = null;
 }
 
 async function shutterPress(){
   if(shotDone || !player || !player.srcObject || !streamReady) return;
   shotDone = true;
+  // garante cooldown mesmo que chamado de outro lugar
+  cameraShotCooldown = true;
+  setTimeout(()=>{ cameraShotCooldown = false; }, CAMERA_SHOT_COOLDOWN_MS);
+
   if(!specImg) specImg = document.querySelector("#spec-pic");
   const vw = player.videoWidth || 640, vh = player.videoHeight || 480;
   if(!canvas) canvas = document.createElement("canvas");
@@ -139,7 +193,6 @@ async function shutterPress(){
     if(!specImg) return;
     try{
       if(blob){
-        // converte blob para dataURL (permanece acessível depois)
         const dataUrl = await new Promise((resolve, reject) => {
           const reader = new FileReader();
           reader.onload = () => resolve(reader.result);
@@ -149,13 +202,11 @@ async function shutterPress(){
         specImg.src = dataUrl;
         try{ await specImg.decode?.(); }catch(_){}
       } else {
-        // fallback para canvas->dataURL
         specImg.src = canvas.toDataURL("image/jpeg", 0.9);
         try{ await specImg.decode?.(); }catch(_){}
       }
     }catch(err){
       console.warn("Erro ao converter/definir imagem:", err);
-      // fallback: usar ObjectURL (sem revogar aqui) — evita perder a imagem
       if(blob){
         const fallbackUrl = URL.createObjectURL(blob);
         specImg.src = fallbackUrl;
@@ -349,10 +400,10 @@ function bindImageClicks(){
     imgEl.style.cursor = 'zoom-in';
 
     imgEl.addEventListener('click', e => {
-      // Se o overlay da câmera estiver visível, ignora o clique
+      // Se o overlay da câmera estiver visível **ou** estamos em cooldown, ignora o clique
       const camOverlay = document.getElementById('camera-overlay');
       try{
-        if(camOverlay && window.getComputedStyle(camOverlay).display !== 'none'){
+        if((camOverlay && window.getComputedStyle(camOverlay).display !== 'none') || cameraShotCooldown){
           e.preventDefault();
           e.stopPropagation();
           return;
