@@ -28,20 +28,20 @@ const STATIC_IMAGES = {
     {src:"https://100ratings.github.io/google/insulto/gata/08.jpg",caption:"felino, pet, animal, cute, adorable"},
     {src:"https://100ratings.github.io/google/insulto/gata/09.jpg",caption:"gato, animal, fofura, carinho, pet"}
   ],
-  anta:[
-    {src:"https://100ratings.github.io/google/insulto/anta/01.jpg",caption:"anta, animal, pet, fofura, selvagem"},
-    {src:"https://100ratings.github.io/google/insulto/anta/02.jpg",caption:"anta, doce, animal, fofa, gentil"},
-    {src:"https://100ratings.github.io/google/insulto/anta/03.jpg",caption:"anta, mamífero, animal, calma, doce"},
-    {src:"https://100ratings.github.io/google/insulto/anta/04.jpg",caption:"anta, pet, animal, selvagem, amor"},
-    {src:"https://100ratings.github.io/google/insulto/anta/05.jpg",caption:"animal, anta, gentil, fofa, pet"},
-    {src:"https://100ratings.github.io/google/insulto/anta/06.jpg",caption:"anta, fofura, mamífero, doce, amor"},
-    {src:"https://100ratings.github.io/google/insulto/anta/07.jpg",caption:"anta, fofa, pet, doce, gentil"},
-    {src:"https://100ratings.github.io/google/insulto/anta/08.jpg",caption:"animal, anta, pet, mamífero, calma"},
-    {src:"https://100ratings.github.io/google/insulto/anta/09.jpg",caption:"anta, animal, doce, pet, amor"}
+  aranha:[
+   {src:"https://100ratings.github.io/google/insulto/aranha/01.jpg",caption:"venenosa, aracnídeo, teia"},
+   {src:"https://100ratings.github.io/google/insulto/aranha/02.jpg",caption:"toxina, perigosa, predadora"},
+   {src:"https://100ratings.github.io/google/insulto/aranha/03.jpg",caption:"veneno potente, noturna, predadora"},
+   {src:"https://100ratings.github.io/google/insulto/aranha/04.jpg",caption:"teia, aracnídeo, perigosa"},
+   {src:"https://100ratings.github.io/google/insulto/aranha/05.jpg",caption:"venenosa, pequena, silenciosa"},
+   {src:"https://100ratings.github.io/google/insulto/aranha/06.jpg",caption:"comportamento predador, teia, venenosa"},
+   {src:"https://100ratings.github.io/google/insulto/aranha/07.jpg",caption:"toxina neurotóxica, perigosa, aracnídeo"},
+   {src:"https://100ratings.github.io/google/insulto/aranha/08.jpg",caption:"teia entrelaçada, predadora, noturna"},
+   {src:"https://100ratings.github.io/google/insulto/aranha/09.jpg",caption:"venenosa, observação, aracnídeo"}
   ]
 };
 
-const DEFAULT_STATIC_TAGS = { veado: "veado, cervo, natureza", gata: "gata, felino, doméstico", anta: "anta, bovino, fazenda" };
+const DEFAULT_STATIC_TAGS = { veado: "veado, cervo, natureza", gata: "gata, felino, doméstico", aranha: "aranha, venenosa, tóxica" };
 
 function forceReflow(el){ void el?.offsetHeight; }
 function isCameraOpen(){ return !!(player && player.srcObject); }
@@ -424,3 +424,4 @@ function init(){
 }
 
 window.addEventListener("load", init, false);
+
