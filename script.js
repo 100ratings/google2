@@ -273,8 +273,14 @@ function bindImageClick() {
 
 function init(){
   specImg=document.querySelector("#spec-pic");
-  bindWordCards(); bindSendButton(); bindBtnTudo(); bindBtnImagens(); disableMenuHashLinks();
+  bindWordCards();
+  bindSendButton();
+  bindBtnTudo();
+  bindBtnImagens();
+  disableMenuHashLinks();
+  bindImageClick(); // ✅ Ativa o popup nas imagens
 }
 
 window.addEventListener("load",init,false);
+
 
