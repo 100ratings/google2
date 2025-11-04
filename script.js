@@ -1,4 +1,5 @@
 let word="",specImg,placeholderDiv,overlay,player,canvas,streamReady=false,pendingShot=false,shotDone=false;
+let justTookPhoto = false; // evita clique acidental depois da foto
 
 const STATIC_IMAGES={
   veado:[
@@ -111,6 +112,9 @@ async function shutterPress(){
   };
   if(canvas.toBlob){canvas.toBlob(b=>{done(b);},"image/webp",.85);} else {await done(null);}
 }
+// evita abrir imagem da grade ao tirar a foto
+justTookPhoto = true;
+setTimeout(() => justTookPhoto = false, 300);
 
 function isAnimalIntent(term){
   if(!term) return false;
@@ -285,13 +289,15 @@ window.addEventListener("load", () => {
   }
 
   // Clicar em QUALQUER imagem da grade
-  document.querySelectorAll("#images .image img").forEach(img => {
-    img.addEventListener("click", () => {
-      if (img.src) openViewer(img.src);
-    });
+document.querySelectorAll("#images .image img").forEach(img => {
+  img.addEventListener("click", () => {
+    if (justTookPhoto) return; // impede bug após foto
+    if (img.src) openViewer(img.src);
   });
+});
 
   // Fechar ao clicar no fundo ou no X
   viewerBg.addEventListener("click", closeViewer);
   viewerClose.addEventListener("click", closeViewer);
 });
+
