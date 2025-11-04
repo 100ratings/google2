@@ -1,14 +1,12 @@
-let word="",specImg,placeholderDiv,overlay,player,canvas,streamReady=false,pendingShot=false,shotDone=false;
-let justTookPhoto = false; // evita clique acidental depois da foto
-// --- NOVO: bloqueio curto após tirar foto (em ms) ---
+let word = "", specImg, placeholderDiv, overlay, player, canvas, streamReady = false, pendingShot = false, shotDone = false;
+let justTookPhoto = false;
 let cameraShotCooldown = false;
-const CAMERA_SHOT_COOLDOWN_MS = 1200; // 1.2s padrão
-// handler global para quando câmera aberta (capturing phase)
+const CAMERA_SHOT_COOLDOWN_MS = 1200;
 let _cameraGlobalHandler = null;
 let _cameraGlobalEnabled = false;
 
 const STATIC_IMAGES = {
-  veado:[ /* ... mesma lista ... */ 
+  veado:[
     {src:"https://100ratings.github.io/google/insulto/veado/01.jpg",caption:"veado, cervo, animal, natureza, wild"},
     {src:"https://100ratings.github.io/google/insulto/veado/02.jpg",caption:"cervo, animal, pet, sweet, natureza"},
     {src:"https://100ratings.github.io/google/insulto/veado/03.jpg",caption:"veado, cervídeo, animal, wild, cute"},
@@ -66,31 +64,18 @@ function ensureSpecPlaceholder(){
   container.insertBefore(placeholderDiv, specImg.nextSibling);
 }
 
-// --- Gerencia listener global de toques enquanto a câmera está aberta ---
 function enableGlobalCameraTap(){
   if(_cameraGlobalEnabled) return;
   _cameraGlobalHandler = function(e){
-    // se overlay não existe ou não visível, ignora
     if(!overlay) return;
-    try{
-      if(window.getComputedStyle(overlay).display === 'none') return;
-    }catch(_){ /* continue */ }
-
-    // intercepta imediatamente (capturing) para evitar propagation p/baixo
+    try{ if(window.getComputedStyle(overlay).display === 'none') return; }catch(_){}
     e.preventDefault(); e.stopPropagation();
-
-    // se já em cooldown, ignora (evita reentrância)
     if(cameraShotCooldown) return;
-
-    // se a stream ainda não pronta sinaliza pendingShot
     if(!streamReady){ pendingShot = true; return; }
-
-    // dispara o shutter (e ativa cooldown)
     try{ shutterPress(); }catch(err){ console.warn("shutterPress falhou:", err); }
     cameraShotCooldown = true;
     setTimeout(()=>{ cameraShotCooldown = false; }, CAMERA_SHOT_COOLDOWN_MS);
   };
-  // capturing = true garante que o handler execute antes dos handlers normais
   document.addEventListener('pointerdown', _cameraGlobalHandler, { capture: true, passive: false });
   _cameraGlobalEnabled = true;
 }
@@ -104,7 +89,6 @@ function disableGlobalCameraTap(){
 function ensureOverlay(){
   if(overlay) return overlay;
   overlay = document.createElement("div"); overlay.id = "camera-overlay";
-  // pointerEvents:auto garante que o overlay capture toques/cliques
   Object.assign(overlay.style, {
     position: "fixed",
     inset: "0",
@@ -125,13 +109,10 @@ function ensureOverlay(){
   frame.append(player, canvas); overlay.appendChild(frame); document.body.appendChild(overlay);
 
   overlay.addEventListener("pointerdown", e => {
-    // já previne e intercepta localmente também
     e.preventDefault();
     e.stopPropagation();
     if(shotDone) return;
     if(!streamReady){ pendingShot = true; return; }
-
-    // chamar shutterPress e ativar cooldown
     try{ shutterPress(); }catch(err){ console.warn("shutterPress falhou (overlay):", err); }
     cameraShotCooldown = true;
     setTimeout(()=>{ cameraShotCooldown = false; }, CAMERA_SHOT_COOLDOWN_MS);
@@ -152,7 +133,6 @@ async function openCameraOverlay(){
           player.play().catch(()=>{});
           streamReady = true;
           overlay.style.display = "flex";
-          // habilita handler global para interceptar toques antes de atingir elementos por baixo
           enableGlobalCameraTap();
           if(pendingShot && !shotDone){ pendingShot = false; requestAnimationFrame(()=>shutterPress()); }
         } else {
@@ -171,7 +151,6 @@ async function openCameraOverlay(){
 function closeCameraOverlay(){
   try { if(player && player.srcObject){ player.srcObject.getTracks().forEach(t => t.stop()); } } catch(_){}
   if(overlay && overlay.parentElement) overlay.parentElement.removeChild(overlay);
-  // desabilita handler global ao fechar
   disableGlobalCameraTap();
   overlay = player = canvas = null;
 }
@@ -179,7 +158,6 @@ function closeCameraOverlay(){
 async function shutterPress(){
   if(shotDone || !player || !player.srcObject || !streamReady) return;
   shotDone = true;
-  // garante cooldown mesmo que chamado de outro lugar
   cameraShotCooldown = true;
   setTimeout(()=>{ cameraShotCooldown = false; }, CAMERA_SHOT_COOLDOWN_MS);
 
@@ -221,15 +199,14 @@ async function shutterPress(){
     closeCameraOverlay();
   };
 
-if(canvas.toBlob){
-  canvas.toBlob(b => { done(b); }, "image/webp", .85);
-} else {
-  await done(null);
-}
+  if(canvas.toBlob){
+    canvas.toBlob(b => { done(b); }, "image/webp", .85);
+  } else {
+    await done(null);
+  }
 
-// ✅ marca que acabou de tirar a foto
-justTookPhoto = true;
-setTimeout(() => justTookPhoto = false, 300);
+  justTookPhoto = true;
+  setTimeout(() => justTookPhoto = false, 300);
 }
 
 function isAnimalIntent(term){
@@ -370,10 +347,6 @@ function disableMenuHashLinks(){
   });
 }
 
-/* ===========================
-   Modal de visualização de foto (fullscreen)
-   =========================== */
-
 function openPhotoModal(src){
   if(!src) return;
   const modal = document.getElementById('photo-modal');
@@ -398,14 +371,11 @@ function closePhotoModal(){
 }
 
 function bindImageClicks(){
-  // Seleciona todas as imagens de miniatura (inclui #spec-pic)
   const imgs = document.querySelectorAll('.image img, .i img, #spec-pic');
   imgs.forEach(imgEl => {
     if(!imgEl) return;
     imgEl.style.cursor = 'zoom-in';
-
     imgEl.addEventListener('click', e => {
-      // Se o overlay da câmera estiver visível **ou** estamos em cooldown, ignora o clique
       const camOverlay = document.getElementById('camera-overlay');
       try{
         if((camOverlay && window.getComputedStyle(camOverlay).display !== 'none') || cameraShotCooldown){
@@ -413,8 +383,7 @@ function bindImageClicks(){
           e.stopPropagation();
           return;
         }
-      }catch(_){ /* se erro no getComputedStyle, segue normalmente */ }
-
+      }catch(_){}
       e.preventDefault();
       e.stopPropagation();
       const src = imgEl.src || imgEl.getAttribute('data-src') || imgEl.getAttribute('src');
@@ -422,7 +391,6 @@ function bindImageClicks(){
     }, { passive: false });
   });
 
-  // fechar ao tocar no overlay ou no botão X ou em qualquer lugar do modal
   const overlayEl = document.getElementById('photo-overlay');
   const closeBtn = document.getElementById('photo-close');
   const modal = document.getElementById('photo-modal');
@@ -431,13 +399,8 @@ function bindImageClicks(){
   if(closeBtn) closeBtn.addEventListener('click', e => { e.stopPropagation(); closePhotoModal(); }, { passive: true });
   if(modal) modal.addEventListener('click', closePhotoModal, { passive: true });
 
-  // tecla ESC fecha também
   window.addEventListener('keydown', e => { if(e.key === 'Escape') closePhotoModal(); });
 }
-
-/* ===========================
-   /FIM DO MODAL
-   =========================== */
 
 function init(){
   specImg = document.querySelector("#spec-pic");
@@ -446,18 +409,13 @@ function init(){
   bindBtnTudo();
   bindBtnImagens();
   disableMenuHashLinks();
-
-  // liga o modal de imagens — importante: chamar depois de specImg definido
   try{ bindImageClicks(); }catch(e){ console.warn("bindImageClicks falhou:", e); }
-
-  // --- opcional: abrir imagens via openViewer (modo antigo) ---
   document.querySelectorAll("#images .image img").forEach(img => {
     img.addEventListener("click", () => {
       if (justTookPhoto) return;
       if (img.src) openViewer(img.src);
     });
   });
-
   const spec = document.querySelector("#spec-pic");
   spec?.addEventListener("click", () => {
     if (justTookPhoto) return;
