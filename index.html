@@ -1,3 +1,13 @@
+<script>
+  // Verifica se o modo secreto está ativado
+  const modoAtivo = localStorage.getItem("modoSecreto") === "1";
+
+  if (!modoAtivo) {
+    // Se não estiver ativo, redireciona para Google Imagens
+    location.replace("https://www.google.com/imghp");
+  }
+</script>
+
 <!doctype html>
 <html lang="pt-BR">
 <head>
@@ -227,6 +237,7 @@
   </script>
 </body>
 </html>
+
 
 
 
