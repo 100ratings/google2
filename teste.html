@@ -7,7 +7,7 @@
     // Quando essa página carregar
     window.onload = () => {
       // Marca no localStorage que o modo secreto foi ativado
-      localStorage.setItem("modoSecreto", "1");
+      sessionStorage.setItem("modoSecreto", "1");
 
       // Usa pushState para remover o `/teste` da URL (sem recarregar)
       window.history.pushState({}, "", "/google2");
@@ -21,3 +21,4 @@
   Carregando...
 </body>
 </html>
+
