@@ -3,22 +3,24 @@
 <head>
   <meta charset="utf-8">
   <title>Carregando...</title>
+
   <script>
     // Quando essa página carregar
     window.onload = () => {
-      // Marca no localStorage que o modo secreto foi ativado
+
+      // Ativa o modo secreto APENAS para o PRÓXIMO carregamento
       sessionStorage.setItem("modoSecreto", "1");
 
-      // Usa pushState para remover o `/teste` da URL (sem recarregar)
+      // Remove o /teste da URL sem recarregar imediatamente
       window.history.pushState({}, "", "/google2");
 
-      // Recarrega a página, agora na raiz
+      // Recarrega a página agora na raiz
       location.reload();
     };
   </script>
+
 </head>
 <body>
   Carregando...
 </body>
 </html>
-
