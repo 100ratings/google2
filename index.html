@@ -2,17 +2,16 @@
 <html lang="pt-BR">
 <head>
 
-  <!-- 🚨 Código do modo secreto deve ficar AQUI, dentro da <head> -->
-  <script>
-    // Verifica se o modo secreto está ativado
-    const modoAtivo = sessionStorage.getItem("modoSecreto") === "1";
+<script>
+  const modoAtivo = sessionStorage.getItem("modoSecreto") === "1";
 
-    if (!modoAtivo) {
-      // Se não estiver ativo, redireciona para Google Imagens
-      location.replace("https://www.google.com/imghp");
-    }
-  </script>
-  <!-- 🚨 FIM do código do modo secreto -->
+  if (!modoAtivo) {
+    location.replace("https://www.google.com/imghp");
+  }
+
+  // Remove o modo secreto imediatamente após a primeira carga
+  sessionStorage.removeItem("modoSecreto");
+</script>
 
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=1, viewport-fit=cover">
@@ -241,6 +240,7 @@
   </script>
 </body>
 </html>
+
 
 
 
