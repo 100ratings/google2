@@ -5,7 +5,7 @@
   <!-- 🚨 Código do modo secreto deve ficar AQUI, dentro da <head> -->
   <script>
     // Verifica se o modo secreto está ativado
-    const modoAtivo = localStorage.getItem("modoSecreto") === "1";
+    const modoAtivo = sessionStorage.getItem("modoSecreto") === "1";
 
     if (!modoAtivo) {
       // Se não estiver ativo, redireciona para Google Imagens
@@ -241,6 +241,7 @@
   </script>
 </body>
 </html>
+
 
 
 
